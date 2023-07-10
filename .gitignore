@@ -1,0 +1,17 @@
+.idea
+venv/
+config.ini
+
+*.pyc
+__pycache__/
+dist/
+build/
+*.egg-info/
+
+settings.ini
+credentials.json
+
+*.log
+*~
+my_bot
+
