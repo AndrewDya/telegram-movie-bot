@@ -95,6 +95,11 @@ async def get_movie_details(movie_id):
             runtime = data.get("runtime")
             genres = data.get("genres")
             budget = data.get("budget")
+            title = data.get("title")
+            rating = data.get("vote_average")
+            overview = data.get("overview")
+
+            budget = locale.format_string("%d", budget, grouping=True)
 
             if poster_path:
                 poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
@@ -118,26 +123,20 @@ async def get_movie_details(movie_id):
             else:
                 actors = []
 
-            return runtime, poster_url, genre_names, actors, budget
+            return runtime, poster_url, genre_names, actors, budget, title, rating, overview
 
     return None
 
 
 async def view_movie_info(movie):
     movie_id = movie.get("id")
-    title = movie.get("title")
-    rating = movie.get("vote_average")
-    overview = movie.get("overview")
-
-    runtime, poster_url, genres, actors, budget = await get_movie_details(movie_id)
-
-    formatted_budget = locale.format_string("%d", budget, grouping=True)
+    runtime, poster_url, genre_names, actors, budget, title, rating, overview = await get_movie_details(movie_id)
 
     movie_info = f"{title}\n"
     movie_info += f"Рейтинг: {rating}\n"
-    movie_info += f"Жанр: {', '.join(genres)}\n"
+    movie_info += f"Жанр: {', '.join(genre_names)}\n"
     movie_info += f"Продолжительность: {runtime} минут\n"
-    movie_info += f"Бюджет: ${formatted_budget}\n"
+    movie_info += f"Бюджет: ${budget}\n"
     movie_info += f"Обзор: {overview}\n"
     movie_info += f"Актёры: {', '.join(actors)}"
 
@@ -164,7 +163,6 @@ async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id,
                                            text="Ошибка при получении данных о популярных фильмах")
-
 
 
 async def top_rated_command():
