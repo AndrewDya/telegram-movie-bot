@@ -7,12 +7,13 @@ import requests
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, \
-    CallbackQueryHandler, CallbackContext
+    CallbackQueryHandler
 
-# Загрузка переменных окружения из файла .env, получение значения API-ключа
+# Загрузка переменных окружения из файла .env
 load_dotenv()
-api_key = os.getenv('API_KEY')
-TOKEN = '6187980676:AAGdLrpWboqiEpuDeQRiYC9ytp-GeiuKLnM'
+API_KEY = os.getenv('API_KEY')
+TOKEN = os.getenv('TOKEN')
+language = 'ru-RU'
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -85,7 +86,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def get_movie_details(movie_id):
     # URL-адрес API TMDb для получения информации о фильме
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}&language=ru-RU"
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -98,10 +99,13 @@ async def get_movie_details(movie_id):
             genres = data.get("genres")
             budget = data.get("budget")
             title = data.get("title")
-            rating = data.get("vote_average")
+            rating = round(data.get("vote_average"), 1)
             overview = data.get("overview")
 
-            budget = locale.format_string("%d", budget, grouping=True)
+            if budget:
+                budget = locale.format_string("%d", budget, grouping=True)
+            else:
+                budget = 'Неизвестен'
 
             if poster_path:
                 poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
@@ -115,15 +119,21 @@ async def get_movie_details(movie_id):
                 genre_names = []
 
             # Получаем информацию об актёрах
-            credits_url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key={api_key}"
+            credits_url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key={API_KEY}&language=ru-RU"
             credits_response = await client.get(credits_url)
 
             if credits_response.status_code == 200:
                 credits_data = credits_response.json()
                 cast = credits_data.get("cast", [])[:5]  # Ограничиваем список первыми 5 актёрами
-                actors = [actor["name"] for actor in cast]
+                actors = [f"{actor['name']} ({actor['character']})" for actor
+                          in cast]
             else:
                 actors = []
+
+            if overview:
+                overview = data.get("overview")
+            else:
+                overview = 'Пока нет'
 
             return runtime, poster_url, genre_names, actors, budget, title, rating, overview
 
@@ -139,14 +149,14 @@ async def view_movie_info(movie):
     movie_info += f"Жанр: {', '.join(genre_names)}\n"
     movie_info += f"Продолжительность: {runtime} минут\n"
     movie_info += f"Бюджет: ${budget}\n"
-    movie_info += f"Обзор: {overview}\n"
+    movie_info += f"Описание: {overview}\n"
     movie_info += f"Актёры: {', '.join(actors)}"
 
     return poster_url, movie_info
 
 
 async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = f"https://api.themoviedb.org/3/movie/popular?api_key={api_key}&language=ru-RU&page=1"
+    url = f"https://api.themoviedb.org/3/movie/popular?api_key={API_KEY}&page=1&language={language}"
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -172,7 +182,7 @@ async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = f"https://api.themoviedb.org/3/movie/top_rated?api_key={api_key}&language=ru-RU&page=1"
+    url = f"https://api.themoviedb.org/3/movie/top_rated?api_key={API_KEY}&page=1&language={language}"
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -198,9 +208,8 @@ async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                            text="Ошибка при получении данных о фильмах с высоким рейтингом")
 
 
-
 async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = f"https://api.themoviedb.org/3/movie/upcoming?api_key={api_key}&language=ru-RU&page=1"
+    url = f"https://api.themoviedb.org/3/movie/upcoming?api_key={API_KEY}&page=1&language={language}"
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
