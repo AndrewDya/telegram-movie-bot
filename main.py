@@ -7,7 +7,7 @@ import requests
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, \
-    CallbackQueryHandler
+    CallbackQueryHandler, CallbackContext
 
 # Загрузка переменных окружения из файла .env, получение значения API-ключа
 load_dotenv()
@@ -171,12 +171,59 @@ async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                            text="Ошибка при получении данных о популярных фильмах")
 
 
-async def top_rated_command():
-    pass
+async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    url = f"https://api.themoviedb.org/3/movie/top_rated?api_key={api_key}&language=ru-RU&page=1"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            if "results" in data:
+                movies = data["results"][:10]  # Получаем информацию о 10 фильмах с высоким рейтингом
+
+                for movie in movies:
+                    poster_url, movie_info = await view_movie_info(movie)
+
+                    # Загружаем содержимое файла по URL-адресу
+                    file_response = await client.get(poster_url)
+                    if file_response.status_code == 200:
+                        file_content = file_response.content
+                        # Отправляем содержимое файла и информацию о фильме в чат
+                        await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file_content, caption=movie_info)
+
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text="Ошибка при получении данных о фильмах с высоким рейтингом")
 
 
-async def upcoming_command():
-    pass
+
+async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    url = f"https://api.themoviedb.org/3/movie/upcoming?api_key={api_key}&language=ru-RU&page=1"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            if "results" in data:
+                movies = data["results"][:10]  # Получаем информацию о 10 ожидаемых фильмах
+
+                for movie in movies:
+                    poster_url, movie_info = await view_movie_info(movie)
+
+                    # Загружаем содержимое файла по URL-адресу
+                    file_response = await client.get(poster_url)
+                    if file_response.status_code == 200:
+                        file_content = file_response.content
+                        # Отправляем содержимое файла и информацию о фильме в чат
+                        await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file_content, caption=movie_info)
+
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text="Ошибка при получении данных о ожидаемых фильмах")
 
 
 async def search_command():
