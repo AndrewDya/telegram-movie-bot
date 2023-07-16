@@ -1,17 +1,19 @@
 import os
+import io
 import logging
 import httpx
 import locale
+import requests
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, \
     CallbackQueryHandler
 
-# Загрузка переменных окружения из файла .env и получение значения API-ключа
+# Загрузка переменных окружения из файла .env, получение значения API-ключа
 load_dotenv()
 api_key = os.getenv('API_KEY')
-
 TOKEN = '6187980676:AAGdLrpWboqiEpuDeQRiYC9ytp-GeiuKLnM'
+
 locale.setlocale(locale.LC_ALL, '')
 
 logging.basicConfig(
@@ -153,12 +155,16 @@ async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data = response.json()
 
             if "results" in data:
-                movies = data["results"][:1]  # Работает только с 1. Почему?
+                movies = data["results"][:10]  # Получаем информацию о 10 популярных фильмах
 
                 for movie in movies:
                     poster_url, movie_info = await view_movie_info(movie)
 
-                    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=poster_url, caption=movie_info)
+                    photo_data = requests.get(poster_url).content
+                    photo_stream = io.BytesIO(photo_data)
+                    await context.bot.send_photo(
+                        chat_id=update.effective_chat.id, photo=photo_stream,
+                        caption=movie_info)
 
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id,
