@@ -1,7 +1,9 @@
 import os
 import logging
+import httpx
+import locale
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, \
     CallbackQueryHandler
 
@@ -10,6 +12,7 @@ load_dotenv()
 api_key = os.getenv('API_KEY')
 
 TOKEN = '6187980676:AAGdLrpWboqiEpuDeQRiYC9ytp-GeiuKLnM'
+locale.setlocale(locale.LC_ALL, '')
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -78,8 +81,90 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
-async def popular_command():
-    pass
+async def get_movie_details(movie_id):
+    # URL-адрес API TMDb для получения информации о фильме
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}&language=ru-RU"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            poster_path = data.get("poster_path")
+            runtime = data.get("runtime")
+            genres = data.get("genres")
+            budget = data.get("budget")
+
+            if poster_path:
+                poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
+            else:
+                poster_url = None
+
+            if genres:
+                genres_dict = {genre["id"]: genre["name"] for genre in genres}
+                genre_names = [genres_dict.get(genre["id"]) for genre in genres if genre["id"] in genres_dict]
+            else:
+                genre_names = []
+
+            # Получаем информацию об актёрах
+            credits_url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key={api_key}"
+            credits_response = await client.get(credits_url)
+
+            if credits_response.status_code == 200:
+                credits_data = credits_response.json()
+                cast = credits_data.get("cast", [])[:5]  # Ограничиваем список первыми 5 актёрами
+                actors = [actor["name"] for actor in cast]
+            else:
+                actors = []
+
+            return runtime, poster_url, genre_names, actors, budget
+
+    return None
+
+
+async def view_movie_info(movie):
+    movie_id = movie.get("id")
+    title = movie.get("title")
+    rating = movie.get("vote_average")
+    overview = movie.get("overview")
+
+    runtime, poster_url, genres, actors, budget = await get_movie_details(movie_id)
+
+    formatted_budget = locale.format_string("%d", budget, grouping=True)
+
+    movie_info = f"{title}\n"
+    movie_info += f"Рейтинг: {rating}\n"
+    movie_info += f"Жанр: {', '.join(genres)}\n"
+    movie_info += f"Продолжительность: {runtime} минут\n"
+    movie_info += f"Бюджет: ${formatted_budget}\n"
+    movie_info += f"Обзор: {overview}\n"
+    movie_info += f"Актёры: {', '.join(actors)}"
+
+    return poster_url, movie_info
+
+
+async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    url = f"https://api.themoviedb.org/3/movie/popular?api_key={api_key}&language=ru-RU&page=1"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            if "results" in data:
+                movies = data["results"][:1]  # Работает только с 1. Почему?
+
+                for movie in movies:
+                    poster_url, movie_info = await view_movie_info(movie)
+
+                    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=poster_url, caption=movie_info)
+
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text="Ошибка при получении данных о популярных фильмах")
+
 
 
 async def top_rated_command():
