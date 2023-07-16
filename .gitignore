@@ -14,4 +14,4 @@ credentials.json
 *.log
 *~
 my_bot
-
+.env
