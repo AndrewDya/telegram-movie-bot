@@ -1,10 +1,8 @@
 import io
-import httpx
-import requests
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from bot.movie_api import view_movie_info
-from bot.utils import API_KEY, language
+from bot.utils import API_KEY, language, send_http_request, load_photo_content
 
 
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -64,81 +62,68 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = f"https://api.themoviedb.org/3/movie/popular?api_key={API_KEY}&page=1&language={language}"
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url)
+    data = await send_http_request(url)
+    if data and "results" in data:
+        movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
 
-        if response.status_code == 200:
-            data = response.json()
+        for movie in movies:
+            poster_url, movie_info = await view_movie_info(movie)
+            photo_data = await load_photo_content(poster_url)
+            if photo_data:
+                photo_stream = io.BytesIO(photo_data)
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id, photo=photo_stream, caption=movie_info)
+            else:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id, text="Ошибка при загрузке фотографии")
 
-            if "results" in data:
-                movies = data["results"][:5]  #TODO поменять 5, добавить ввод от пользователя
-
-                for movie in movies:
-                    poster_url, movie_info = await view_movie_info(movie)
-
-                    photo_data = requests.get(poster_url).content
-                    photo_stream = io.BytesIO(photo_data)
-                    await context.bot.send_photo(
-                        chat_id=update.effective_chat.id, photo=photo_stream,
-                        caption=movie_info)
-
-        else:
-            await context.bot.send_message(chat_id=update.effective_chat.id,
-                                           text="Ошибка при получении данных о популярных фильмах")
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Ошибка при получении данных о популярных фильмах")
 
 
 async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = f"https://api.themoviedb.org/3/movie/top_rated?api_key={API_KEY}&page=1&language={language}"
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url)
+    data = await send_http_request(url)
+    if data and "results" in data:
+        movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
 
-        if response.status_code == 200:
-            data = response.json()
+        for movie in movies:
+            poster_url, movie_info = await view_movie_info(movie)
+            file_content = await load_photo_content(poster_url)
+            if file_content:
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id, photo=file_content, caption=movie_info)
+            else:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id, text="Ошибка при загрузке фотографии")
 
-            if "results" in data:
-                movies = data["results"][:5]  #TODO поменять 5, добавить ввод от пользователя
-
-                for movie in movies:
-                    poster_url, movie_info = await view_movie_info(movie)
-
-                    # Загружаем содержимое файла по URL-адресу
-                    file_response = await client.get(poster_url)
-                    if file_response.status_code == 200:
-                        file_content = file_response.content
-                        # Отправляем содержимое файла и информацию о фильме в чат
-                        await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file_content, caption=movie_info)
-
-        else:
-            await context.bot.send_message(chat_id=update.effective_chat.id,
-                                           text="Ошибка при получении данных о фильмах с высоким рейтингом")
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Ошибка при получении данных о фильмах с высоким рейтингом")
 
 
 async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = f"https://api.themoviedb.org/3/movie/upcoming?api_key={API_KEY}&page=1&language={language}"
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url)
+    data = await send_http_request(url)
+    if data and "results" in data:
+        movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
 
-        if response.status_code == 200:
-            data = response.json()
+        for movie in movies:
+            poster_url, movie_info = await view_movie_info(movie)
+            file_content = await load_photo_content(poster_url)
+            if file_content:
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id, photo=file_content, caption=movie_info)
+            else:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id, text="Ошибка при загрузке фотографии")
 
-            if "results" in data:
-                movies = data["results"][:5]  #TODO поменять 5, добавить ввод от пользователя
-
-                for movie in movies:
-                    poster_url, movie_info = await view_movie_info(movie)
-
-                    # Загружаем содержимое файла по URL-адресу
-                    file_response = await client.get(poster_url)
-                    if file_response.status_code == 200:
-                        file_content = file_response.content
-                        # Отправляем содержимое файла и информацию о фильме в чат
-                        await context.bot.send_photo(chat_id=update.effective_chat.id, photo=file_content, caption=movie_info)
-
-        else:
-            await context.bot.send_message(chat_id=update.effective_chat.id,
-                                           text="Ошибка при получении данных о ожидаемых фильмах")
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Ошибка при получении данных о ожидаемых фильмах")
 
 
 async def search_command():
