@@ -1,5 +1,6 @@
 import os
 import io
+import re
 import logging
 import httpx
 import locale
@@ -22,41 +23,38 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-commands = ["help_command", "popular_command", "top_rated_command",
-            "upcoming_command", "search_command", "history_command"]
-
 
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     button_data = query.data
 
-    if button_data == commands[0]:
+    if button_data == "help_command":
         await help_command(update, context)
-    elif button_data == commands[1]:
+    elif button_data == "popular_command":
         await popular_command(update, context)
-    elif button_data == commands[2]:
+    elif button_data == "top_rated_command":
         await top_rated_command(update, context)
-    elif button_data == commands[3]:
+    elif button_data == "upcoming_command":
         await upcoming_command(update, context)
-    elif button_data == commands[4]:
+    elif button_data == "search_command":
         await search_command(update, context)
-    elif button_data == commands[5]:
+    elif button_data == "history_command":
         await history_command(update, context)
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Создание кнопок команд
     buttons_row1 = [
-        InlineKeyboardButton("Помощь", callback_data=commands[0]),
-        InlineKeyboardButton("Популярные фильмы", callback_data=commands[1]),
+        InlineKeyboardButton("Помощь", callback_data="help_command"),
+        InlineKeyboardButton("Популярные фильмы", callback_data="popular_command"),
     ]
     buttons_row2 = [
-        InlineKeyboardButton("Топ рейтинга", callback_data=commands[2]),
-        InlineKeyboardButton("Ожидаемые", callback_data=commands[3]),
+        InlineKeyboardButton("Топ рейтинга", callback_data="top_rated_command"),
+        InlineKeyboardButton("Ожидаемые", callback_data="upcoming_command"),
     ]
     buttons_row3 = [
-        InlineKeyboardButton("Поиск фильма", callback_data=commands[4]),
-        InlineKeyboardButton("История", callback_data=commands[5]),
+        InlineKeyboardButton("Поиск фильма", callback_data="search_command"),
+        InlineKeyboardButton("История", callback_data="history_command"),
     ]
 
     # Создание разметки с кнопками
@@ -66,10 +64,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="Выберите команду:",
                                    reply_markup=keyboard)
-
-
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -86,7 +80,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def get_movie_details(movie_id):
     # URL-адрес API TMDb для получения информации о фильме
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}&append_to_response=credits,videos"
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}&append_to_response=credits"
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -101,43 +95,47 @@ async def get_movie_details(movie_id):
             title = data.get("title")
             rating = round(data.get("vote_average"), 1)
             overview = data.get("overview")
-
-            if budget:
-                budget = locale.format_string("%d", budget, grouping=True)
-            else:
-                budget = 'Неизвестен'
-
-            if poster_path:
-                poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
-            else:
-                poster_url = None
-
-            if genres:
-                genres_dict = {genre["id"]: genre["name"] for genre in genres}
-                genre_names = [genres_dict.get(genre["id"]) for genre in genres if genre["id"] in genres_dict]
-            else:
-                genre_names = []
-
             cast = data.get("credits", {}).get("cast", [])[:5]
+            crew = data.get("credits", {}).get("crew", [])
+
+            budget = locale.format_string("%d", budget, grouping=True) \
+                if budget else 'Неизвестен'
+            poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" \
+                if poster_path else None
+
+            genre_names = [genre["name"] for genre in genres
+                           if genre.get("id") in {g["id"] for g in genres}]
+
             actors = [f"{actor['name']} ({actor['character']})" for actor in cast]
 
-            crew = data.get("credits", {}).get("crew", [])
             director = next((member["name"] for member in crew if
                              member["job"] == "Director"), None)
 
-            if overview:
-                overview = data.get("overview")
-            else:
-                overview = 'Пока нет'
+            sentences = re.split(r'(?<=[.!?])\s+', overview)
+            overview = sentences[0] if sentences else 'Пока нет'
 
-            return runtime, poster_url, genre_names, actors, budget, title, rating, overview, director
+            # videos_url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key={API_KEY}"
+            # videos_response = await client.get(videos_url)
+            #
+            # if videos_response.status_code == 200:
+            #     videos_data = videos_response.json()
+            #     videos_results = videos_data.get("results", [])
+            #     trailer = next((video for video in videos_results if video.get("type") == "Trailer"
+            #                     and video.get("official")), None)
+            #     trailer_key = trailer.get("key") if trailer else None
+            #     trailer_url = f"https://www.youtube.com/watch?v={trailer_key}" \
+            #         if trailer_key else None
+
+            return runtime, poster_url, genre_names, actors, budget, title, \
+                rating, overview, director
 
     return None
 
 
 async def view_movie_info(movie):
     movie_id = movie.get("id")
-    runtime, poster_url, genre_names, actors, budget, title, rating, overview, director = await get_movie_details(movie_id)
+    runtime, poster_url, genre_names, actors, budget, title, rating, overview, \
+        director = await get_movie_details(movie_id)
 
     movie_info = f"{title}\n"
     movie_info += f"Рейтинг: {rating}\n"
@@ -145,8 +143,8 @@ async def view_movie_info(movie):
     movie_info += f"Продолжительность: {runtime} минут\n"
     movie_info += f"Бюджет: ${budget}\n"
     movie_info += f"Режиссёр: {director}\n"
-    movie_info += f"Описание: {overview}\n"
-    movie_info += f"Актёры: {', '.join(actors)}"
+    movie_info += f"Описание: {overview}...\n"
+    movie_info += f"Актёры: {', '.join(actors)}\n"
 
     return poster_url, movie_info
 
@@ -161,7 +159,7 @@ async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data = response.json()
 
             if "results" in data:
-                movies = data["results"][:5]  # Получаем информацию о 10 популярных фильмах
+                movies = data["results"][:5]  #TODO поменять 5, добавить ввод от пользователя
 
                 for movie in movies:
                     poster_url, movie_info = await view_movie_info(movie)
@@ -187,7 +185,7 @@ async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data = response.json()
 
             if "results" in data:
-                movies = data["results"][:5]  # Получаем информацию о 10 фильмах с высоким рейтингом
+                movies = data["results"][:5]  #TODO поменять 5, добавить ввод от пользователя
 
                 for movie in movies:
                     poster_url, movie_info = await view_movie_info(movie)
@@ -214,7 +212,7 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data = response.json()
 
             if "results" in data:
-                movies = data["results"][:5]  # Получаем информацию о 10 ожидаемых фильмах
+                movies = data["results"][:5]  #TODO поменять 5, добавить ввод от пользователя
 
                 for movie in movies:
                     poster_url, movie_info = await view_movie_info(movie)
