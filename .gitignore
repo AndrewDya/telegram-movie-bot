@@ -13,6 +13,6 @@ credentials.json
 *.log
 *~
 my_bot
-.env
+bot/.env
 /actors_roles.txt
 /script_actors.py
