@@ -86,7 +86,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def get_movie_details(movie_id):
     # URL-адрес API TMDb для получения информации о фильме
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}&append_to_response=credits,videos"
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -118,37 +118,33 @@ async def get_movie_details(movie_id):
             else:
                 genre_names = []
 
-            # Получаем информацию об актёрах
-            credits_url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key={API_KEY}&language=ru-RU"
-            credits_response = await client.get(credits_url)
+            cast = data.get("credits", {}).get("cast", [])[:5]
+            actors = [f"{actor['name']} ({actor['character']})" for actor in cast]
 
-            if credits_response.status_code == 200:
-                credits_data = credits_response.json()
-                cast = credits_data.get("cast", [])[:5]  # Ограничиваем список первыми 5 актёрами
-                actors = [f"{actor['name']} ({actor['character']})" for actor
-                          in cast]
-            else:
-                actors = []
+            crew = data.get("credits", {}).get("crew", [])
+            director = next((member["name"] for member in crew if
+                             member["job"] == "Director"), None)
 
             if overview:
                 overview = data.get("overview")
             else:
                 overview = 'Пока нет'
 
-            return runtime, poster_url, genre_names, actors, budget, title, rating, overview
+            return runtime, poster_url, genre_names, actors, budget, title, rating, overview, director
 
     return None
 
 
 async def view_movie_info(movie):
     movie_id = movie.get("id")
-    runtime, poster_url, genre_names, actors, budget, title, rating, overview = await get_movie_details(movie_id)
+    runtime, poster_url, genre_names, actors, budget, title, rating, overview, director = await get_movie_details(movie_id)
 
     movie_info = f"{title}\n"
     movie_info += f"Рейтинг: {rating}\n"
     movie_info += f"Жанр: {', '.join(genre_names)}\n"
     movie_info += f"Продолжительность: {runtime} минут\n"
     movie_info += f"Бюджет: ${budget}\n"
+    movie_info += f"Режиссёр: {director}\n"
     movie_info += f"Описание: {overview}\n"
     movie_info += f"Актёры: {', '.join(actors)}"
 
@@ -165,7 +161,7 @@ async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data = response.json()
 
             if "results" in data:
-                movies = data["results"][:10]  # Получаем информацию о 10 популярных фильмах
+                movies = data["results"][:5]  # Получаем информацию о 10 популярных фильмах
 
                 for movie in movies:
                     poster_url, movie_info = await view_movie_info(movie)
@@ -191,7 +187,7 @@ async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data = response.json()
 
             if "results" in data:
-                movies = data["results"][:10]  # Получаем информацию о 10 фильмах с высоким рейтингом
+                movies = data["results"][:5]  # Получаем информацию о 10 фильмах с высоким рейтингом
 
                 for movie in movies:
                     poster_url, movie_info = await view_movie_info(movie)
@@ -218,7 +214,7 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data = response.json()
 
             if "results" in data:
-                movies = data["results"][:10]  # Получаем информацию о 10 ожидаемых фильмах
+                movies = data["results"][:5]  # Получаем информацию о 10 ожидаемых фильмах
 
                 for movie in movies:
                     poster_url, movie_info = await view_movie_info(movie)
