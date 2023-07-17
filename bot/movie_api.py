@@ -1,5 +1,6 @@
 import locale
 import re
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from bot.utils import API_KEY, language, send_http_request
 
 
@@ -28,28 +29,33 @@ async def get_movie_details(movie_id):
         sentences = re.split(r'(?<=[.!?])\s+', overview)
         overview = sentences[0] if sentences else 'Пока нет'
 
-        # videos_url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key={API_KEY}"
-        # videos_response = await client.get(videos_url)
-        #
-        # if videos_response.status_code == 200:
-        #     videos_data = videos_response.json()
-        #     videos_results = videos_data.get("results", [])
-        #     trailer = next((video for video in videos_results if video.get("type") == "Trailer"
-        #                     and video.get("official")), None)
-        #     trailer_key = trailer.get("key") if trailer else None
-        #     trailer_url = f"https://www.youtube.com/watch?v={trailer_key}" \
-        #         if trailer_key else None
-
         return runtime, poster_url, genre_names, actors, budget, title, \
                 rating, overview, director
 
     return None
 
 
+async def find_trailer(movie_id):
+    videos_url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key={API_KEY}"
+    videos_data = await send_http_request(videos_url)
+
+    if videos_data and "results" in videos_data:
+        videos_results = videos_data["results"]
+        trailer = next((video for video in videos_results if
+                        video.get("type") == "Trailer" and video.get(
+                            "official")), None)
+        if trailer:
+            trailer_key = trailer.get("key")
+            trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
+            return trailer_url
+
+    return None
+
+
 async def view_movie_info(movie):
     movie_id = movie.get("id")
-    runtime, poster_url, genre_names, actors, budget, title, rating, overview, \
-        director = await get_movie_details(movie_id)
+    runtime, poster_url, genre_names, actors, budget, title, rating, \
+        overview, director = await get_movie_details(movie_id)
 
     movie_info = f"{title}\n"
     movie_info += f"Рейтинг: {rating}\n"
@@ -57,7 +63,15 @@ async def view_movie_info(movie):
     movie_info += f"Продолжительность: {runtime} минут\n"
     movie_info += f"Бюджет: ${budget}\n"
     movie_info += f"Режиссёр: {director}\n"
-    movie_info += f"Описание: {overview}...\n"
+    movie_info += f"Описание: {overview}\n"
     movie_info += f"Актёры: {', '.join(actors)}\n"
 
-    return poster_url, movie_info
+    trailer_url = await find_trailer(movie_id)
+    if trailer_url:
+        trailer_button = InlineKeyboardButton("Смотреть трейлер", url=trailer_url)
+        keyboard = InlineKeyboardMarkup([[trailer_button]])
+    else:
+        keyboard = None
+
+    return poster_url, movie_info, keyboard
+

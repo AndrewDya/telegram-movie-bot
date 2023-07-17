@@ -67,16 +67,17 @@ async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
 
         for movie in movies:
-            poster_url, movie_info = await view_movie_info(movie)
+            poster_url, movie_info, keyboard = await view_movie_info(movie)
             photo_data = await load_photo_content(poster_url)
             if photo_data:
                 photo_stream = io.BytesIO(photo_data)
                 await context.bot.send_photo(
-                    chat_id=update.effective_chat.id, photo=photo_stream, caption=movie_info)
+                    chat_id=update.effective_chat.id, photo=photo_stream,
+                    caption=movie_info, reply_markup=keyboard)
             else:
                 await context.bot.send_message(
-                    chat_id=update.effective_chat.id, text="Ошибка при загрузке фотографии")
-
+                    chat_id=update.effective_chat.id,
+                    text="Ошибка при загрузке фотографии")
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Ошибка при получении данных о популярных фильмах")
@@ -90,11 +91,11 @@ async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
 
         for movie in movies:
-            poster_url, movie_info = await view_movie_info(movie)
+            poster_url, movie_info, keyboard = await view_movie_info(movie)
             file_content = await load_photo_content(poster_url)
             if file_content:
                 await context.bot.send_photo(
-                    chat_id=update.effective_chat.id, photo=file_content, caption=movie_info)
+                    chat_id=update.effective_chat.id, photo=file_content, caption=movie_info, reply_markup=keyboard)
             else:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id, text="Ошибка при загрузке фотографии")
@@ -112,11 +113,11 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
 
         for movie in movies:
-            poster_url, movie_info = await view_movie_info(movie)
+            poster_url, movie_info, keyboard = await view_movie_info(movie)
             file_content = await load_photo_content(poster_url)
             if file_content:
                 await context.bot.send_photo(
-                    chat_id=update.effective_chat.id, photo=file_content, caption=movie_info)
+                    chat_id=update.effective_chat.id, photo=file_content, caption=movie_info, reply_markup=keyboard)
             else:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id, text="Ошибка при загрузке фотографии")
