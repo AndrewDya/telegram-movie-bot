@@ -1,6 +1,5 @@
 .idea
 venv/
-config.ini
 
 *.pyc
 __pycache__/
@@ -14,4 +13,7 @@ credentials.json
 *.log
 *~
 my_bot
-.env
+bot/.env
+/actors_roles.txt
+/script_actors.py
+/database/.env
