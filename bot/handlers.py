@@ -93,19 +93,15 @@ async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAU
     )
 
 
-async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
-    if selected_count is None:
-        await create_movie_count_buttons(update, context, "popular")
+async def get_movies_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str, selected_count: int,):
+    data = await send_http_request(url)
+    if data and "results" in data:
+        movies = data["results"][:selected_count]
+        await send_movie_info(update, context, movies)
     else:
-        url = f"https://api.themoviedb.org/3/movie/popular?api_key={API_KEY}&page=1&language={language}"
-        data = await send_http_request(url)
-        if data and "results" in data:
-            movies = data["results"][:selected_count]
-            await send_movie_info(update, context, movies)
-        else:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id, text="Ошибка при получении данных о популярных фильмах")
-        await start_command(update, context)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text=f"Ошибка при получении данных о фильмах")
+    await start_command(update, context)
 
 
 async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
@@ -113,15 +109,15 @@ async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         await create_movie_count_buttons(update, context, "top")
     else:
         url = f"https://api.themoviedb.org/3/movie/top_rated?api_key={API_KEY}&page=1&language={language}"
+        await get_movies_by_url(update, context, url, selected_count)
 
-        data = await send_http_request(url)
-        if data and "results" in data:
-            movies = data["results"][:selected_count]
-            await send_movie_info(update, context, movies)
-        else:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id, text="Ошибка при получении данных о фильмах с высоким рейтингом")
-        await start_command(update, context)
+
+async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+    if selected_count is None:
+        await create_movie_count_buttons(update, context, "popular")
+    else:
+        url = f"https://api.themoviedb.org/3/movie/popular?api_key={API_KEY}&page=1&language={language}"
+        await get_movies_by_url(update, context, url, selected_count)
 
 
 async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
@@ -129,15 +125,7 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         await create_movie_count_buttons(update, context, "upcoming")
     else:
         url = f"https://api.themoviedb.org/3/movie/upcoming?api_key={API_KEY}&page=1&language={language}"
-
-        data = await send_http_request(url)
-        if data and "results" in data:
-            movies = data["results"][:selected_count]
-            await send_movie_info(update, context, movies)
-        else:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id, text="Ошибка при получении данных о ожидаемых фильмах")
-        await start_command(update, context)
+        await get_movies_by_url(update, context, url, selected_count)
 
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
