@@ -1,46 +1,39 @@
 import sqlite3
-import httpx
-from bot.utils import API_KEY, language
+import os
 
 
-async def populate_movies_database():
-    # Создаём подключение к базе данных
-    conn = sqlite3.connect('movies.db')
+def get_db_path():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    db_relative_path = "movies.db"
+    db_path = os.path.join(current_dir, db_relative_path)
 
-    # Создаём курсор для выполнения SQL-запросов
+    return db_path
+
+
+def search_movies(query):
+    # Подключение к базе данных SQLite
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Максимальное количество страниц для запроса
-    max_pages = 39133 #500
+    # Выполнение запроса к базе данных с поиском в нижнем регистре, ограничив результаты до 3
+    query_lower = query.lower()
+    cursor.execute("SELECT id FROM movies WHERE lower(title) LIKE ? LIMIT 2", ('%' + query_lower + '%',))
+    results_lower = cursor.fetchall()
 
-    for page in range(1, 500):
-        url = f"https://api.themoviedb.org/3/movie/popular?api_key={API_KEY}&language={language}&page={page}"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                if "results" in data:
-                    movies = data["results"]
+    # Выполнение запроса к базе данных с поиском по подстроке с заглавной буквой, ограничив результаты до 3
+    query_capitalized = query.capitalize()
+    cursor.execute("SELECT id FROM movies WHERE title LIKE ? LIMIT 2", ('%' + query_capitalized + '%',))
+    results_capitalized = cursor.fetchall()
 
-                    # Вставляем данные о фильмах в базу данных
-                    for movie in movies:
-                        movie_id = movie.get("id")
-                        title = movie.get("title")
-                        rating = movie.get("vote_average")
-                        release_date = movie.get("release_date")
-                        runtime = movie.get("runtime", None)
-
-                        # Выполняем SQL-запрос для вставки данных о фильме
-                        cursor.execute(
-                            "INSERT INTO movies (id, title, rating, release_date, runtime) VALUES (?, ?, ?, ?, ? )",
-                            (movie_id, title, rating, release_date, runtime)
-                        )
-
-    # Фиксируем изменения и закрываем подключение к базе данных
-    conn.commit()
+    # Закрытие соединения с базой данных
     conn.close()
 
+    # Извлекаем только ID из результатов запросов
+    movie_ids_lower = [result[0] for result in results_lower]
+    movie_ids_capitalized = [result[0] for result in results_capitalized]
 
-# Запускаем функцию заполнения базы данных
-import asyncio
-asyncio.run(populate_movies_database())
+    # Комбинируем результаты из обоих запросов, чтобы получить уникальные ID фильмов
+    movie_id = list(set(movie_ids_lower + movie_ids_capitalized))
+
+    return movie_id

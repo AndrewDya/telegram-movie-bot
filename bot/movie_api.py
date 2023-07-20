@@ -1,7 +1,8 @@
+import io
 import locale
 import re
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from bot.utils import API_KEY, language, send_http_request
+from bot.utils import API_KEY, language, send_http_request, load_photo_content
 
 
 async def get_movie_details(movie_id):
@@ -75,3 +76,17 @@ async def view_movie_info(movie):
 
     return poster_url, movie_info, keyboard
 
+
+async def send_movie_info(update, context, movies):
+    for movie in movies:
+        poster_url, movie_info, keyboard = await view_movie_info(movie)
+        file_content = await load_photo_content(poster_url)
+        if file_content:
+            photo_stream = io.BytesIO(file_content)
+            await context.bot.send_photo(
+                chat_id=update.effective_chat.id, photo=photo_stream,
+                caption=movie_info, reply_markup=keyboard)
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Ошибка при загрузке фотографии")

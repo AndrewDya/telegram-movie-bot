@@ -1,8 +1,9 @@
 import io
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
-from bot.movie_api import view_movie_info
+from bot.movie_api import view_movie_info, send_movie_info
 from bot.utils import API_KEY, language, send_http_request, load_photo_content
+from database.database import search_movies
 
 
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -96,22 +97,11 @@ async def on_popular_count_selected(update: Update, context: ContextTypes.DEFAUL
     data = await send_http_request(url)
     if data and "results" in data:
         movies = data["results"][:selected_count]
-
-        for movie in movies:
-            poster_url, movie_info, keyboard = await view_movie_info(movie)
-            photo_data = await load_photo_content(poster_url)
-            if photo_data:
-                photo_stream = io.BytesIO(photo_data)
-                await context.bot.send_photo(
-                    chat_id=update.effective_chat.id, photo=photo_stream,
-                    caption=movie_info, reply_markup=keyboard)
-            else:
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text="Ошибка при загрузке фотографии")
+        await send_movie_info(update, context, movies)
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Ошибка при получении данных о популярных фильмах")
+    await start_command(update, context)
 
 
 async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -120,20 +110,11 @@ async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = await send_http_request(url)
     if data and "results" in data:
         movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
-
-        for movie in movies:
-            poster_url, movie_info, keyboard = await view_movie_info(movie)
-            file_content = await load_photo_content(poster_url)
-            if file_content:
-                await context.bot.send_photo(
-                    chat_id=update.effective_chat.id, photo=file_content, caption=movie_info, reply_markup=keyboard)
-            else:
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id, text="Ошибка при загрузке фотографии")
-
+        await send_movie_info(update, context, movies)
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Ошибка при получении данных о фильмах с высоким рейтингом")
+    await start_command(update, context)
 
 
 async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -142,25 +123,20 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = await send_http_request(url)
     if data and "results" in data:
         movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
-
-        for movie in movies:
-            poster_url, movie_info, keyboard = await view_movie_info(movie)
-            file_content = await load_photo_content(poster_url)
-            if file_content:
-                await context.bot.send_photo(
-                    chat_id=update.effective_chat.id, photo=file_content, caption=movie_info, reply_markup=keyboard)
-            else:
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id, text="Ошибка при загрузке фотографии")
-
+        await send_movie_info(update, context, movies)
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Ошибка при получении данных о ожидаемых фильмах")
+    await start_command(update, context)
 
 
-async def search_command():
-    pass
-
+async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # await context.bot.send_message(chat_id=update.effective_chat.id,
+    #                                text="Введите название фильма для поиска:")
+    #
+    # # Получаем ответ пользователя
+    # user_response = await context.bot.get_updates()
+	pass
 
 async def history_command():
     pass
