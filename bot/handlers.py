@@ -1,9 +1,7 @@
-import io
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
-from bot.movie_api import view_movie_info, send_movie_info
-from bot.utils import API_KEY, language, send_http_request, load_photo_content
-from database.database import search_movies
+from bot.movie_api import send_movie_info
+from bot.utils import API_KEY, language, send_http_request
 
 
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -13,17 +11,24 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
     if button_data == "help_command":
         await help_command(update, context)
     elif button_data == "popular_command":
-        await popular_command(update, context)
+        await popular_command(update, context, selected_count=None)
+    elif button_data.startswith("popular_"):
+        selected_count = int(button_data.split("_")[1])
+        await popular_command(update, context, selected_count)
     elif button_data == "top_rated_command":
-        await top_rated_command(update, context)
+        await top_rated_command(update, context, selected_count=None)
+    elif button_data.startswith("top_"):
+        selected_count = int(button_data.split("_")[1])
+        await top_rated_command(update, context, selected_count)
     elif button_data == "upcoming_command":
-        await upcoming_command(update, context)
+        await upcoming_command(update, context, selected_count=None)
+    elif button_data.startswith("upcoming_"):
+        selected_count = int(button_data.split("_")[1])
+        await upcoming_command(update, context, selected_count)
     elif button_data == "search_command":
         await search_command(update, context)
     elif button_data == "history_command":
         await history_command(update, context)
-    elif button_data.startswith("popular_"):  # Обработка выбора числа популярных фильмов
-        await on_popular_count_selected(update, context)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда")
 
@@ -69,74 +74,108 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await start_command(update, context)
 
 
-async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Варианты числа фильмов для вывода в кнопках
-    movie_counts = [1, 3, 5, 10]
+async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+    if selected_count is None:
+        # Варианты числа фильмов для вывода в кнопках
+        movie_counts = [1, 3, 5, 10]
 
-    # Создание кнопок с вариантами числа фильмов
-    buttons = [
-        InlineKeyboardButton(str(count), callback_data=f"popular_{count}")
-        for count in movie_counts
-    ]
-    keyboard = InlineKeyboardMarkup([buttons])
+        # Создание кнопок с вариантами числа фильмов
+        buttons = [
+            InlineKeyboardButton(str(count), callback_data=f"popular_{count}")
+            for count in movie_counts
+        ]
+        keyboard = InlineKeyboardMarkup([buttons])
 
-    # Отправка сообщения с вопросом о выборе числа фильмов
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Выберите количество популярных фильмов, которое хотите увидеть:",
-        reply_markup=keyboard
-    )
-
-
-async def on_popular_count_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Получение выбранного числа фильмов из CallbackQuery
-    selected_count = int(update.callback_query.data.split("_")[1])
-
-    url = f"https://api.themoviedb.org/3/movie/popular?api_key={API_KEY}&page=1&language={language}"
-
-    data = await send_http_request(url)
-    if data and "results" in data:
-        movies = data["results"][:selected_count]
-        await send_movie_info(update, context, movies)
-    else:
+        # Отправка сообщения с вопросом о выборе числа фильмов
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Ошибка при получении данных о популярных фильмах")
-    await start_command(update, context)
-
-
-async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = f"https://api.themoviedb.org/3/movie/top_rated?api_key={API_KEY}&page=1&language={language}"
-
-    data = await send_http_request(url)
-    if data and "results" in data:
-        movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
-        await send_movie_info(update, context, movies)
+            chat_id=update.effective_chat.id,
+            text="Выберите количество популярных фильмов, которое хотите увидеть:",
+            reply_markup=keyboard
+        )
     else:
+        url = f"https://api.themoviedb.org/3/movie/popular?api_key={API_KEY}&page=1&language={language}"
+
+        data = await send_http_request(url)
+        if data and "results" in data:
+            movies = data["results"][:selected_count]
+            await send_movie_info(update, context, movies)
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, text="Ошибка при получении данных о популярных фильмах")
+        await start_command(update, context)
+
+
+async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+    if selected_count is None:
+        # Варианты числа фильмов для вывода в кнопках
+        movie_counts = [1, 3, 5, 10]
+
+        # Создание кнопок с вариантами числа фильмов
+        buttons = [
+            InlineKeyboardButton(str(count),
+                                 callback_data=f"top_{count}")
+            for count in movie_counts
+        ]
+
+        keyboard = InlineKeyboardMarkup([buttons])
+
+        # Отправка сообщения с вопросом о выборе числа фильмов
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Ошибка при получении данных о фильмах с высоким рейтингом")
-    await start_command(update, context)
-
-
-async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = f"https://api.themoviedb.org/3/movie/upcoming?api_key={API_KEY}&page=1&language={language}"
-
-    data = await send_http_request(url)
-    if data and "results" in data:
-        movies = data["results"][:5]  # TODO: Изменить 5, добавить ввод от пользователя
-        await send_movie_info(update, context, movies)
+            chat_id=update.effective_chat.id,
+            text="Выберите количество фильмов с высоким рейтингом, которое хотите увидеть:",
+            reply_markup=keyboard
+        )
     else:
+        url = f"https://api.themoviedb.org/3/movie/top_rated?api_key={API_KEY}&page=1&language={language}"
+
+        data = await send_http_request(url)
+        if data and "results" in data:
+            movies = data["results"][:selected_count]
+            await send_movie_info(update, context, movies)
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, text="Ошибка при получении данных о фильмах с высоким рейтингом")
+        await start_command(update, context)
+
+
+async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+    if selected_count is None:
+        # Варианты числа фильмов для вывода в кнопках
+        movie_counts = [1, 3, 5, 10]
+
+        # Создание кнопок с вариантами числа фильмов
+        buttons = [
+            InlineKeyboardButton(str(count), callback_data=f"upcoming_{count}")
+            for count in movie_counts
+        ]
+        keyboard = InlineKeyboardMarkup([buttons])
+
+        # Отправка сообщения с вопросом о выборе числа фильмов
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Ошибка при получении данных о ожидаемых фильмах")
-    await start_command(update, context)
+            chat_id=update.effective_chat.id,
+            text="Выберите количество ожидаемых фильмов, которое хотите увидеть:",
+            reply_markup=keyboard
+        )
+    else:
+        url = f"https://api.themoviedb.org/3/movie/upcoming?api_key={API_KEY}&page=1&language={language}"
+
+        data = await send_http_request(url)
+        if data and "results" in data:
+            movies = data["results"][:selected_count]
+            await send_movie_info(update, context, movies)
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, text="Ошибка при получении данных о ожидаемых фильмах")
+        await start_command(update, context)
 
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pass
     # await context.bot.send_message(chat_id=update.effective_chat.id,
     #                                text="Введите название фильма для поиска:")
     #
     # # Получаем ответ пользователя
     # user_response = await context.bot.get_updates()
-	pass
 
 async def history_command():
     pass
