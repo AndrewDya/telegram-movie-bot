@@ -67,12 +67,18 @@ async def view_movie_info(movie):
     movie_info += f"Описание: {overview}\n"
     movie_info += f"Актёры: {', '.join(actors)}\n"
 
+    # Добавляем кнопку "Смотреть трейлер"
     trailer_url = await find_trailer(movie_id)
+    buttons = []
     if trailer_url:
         trailer_button = InlineKeyboardButton("Смотреть трейлер", url=trailer_url)
-        keyboard = InlineKeyboardMarkup([[trailer_button]])
-    else:
-        keyboard = None
+        buttons.append([trailer_button])
+
+    # Добавляем кнопку "Добавить в избранное"
+    add_to_favorites_button = InlineKeyboardButton("Добавить в избранное", callback_data=f"add_to_favorites_{movie_id}")
+    buttons.append([add_to_favorites_button])
+
+    keyboard = InlineKeyboardMarkup(buttons) if buttons else None
 
     return poster_url, movie_info, keyboard
 

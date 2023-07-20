@@ -27,8 +27,8 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
         await upcoming_command(update, context, selected_count)
     elif button_data == "search_command":
         await search_command(update, context)
-    elif button_data == "history_command":
-        await history_command(update, context)
+    elif button_data == "favorites_command":
+        await favorites_command(update, context)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда")
 
@@ -45,7 +45,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     buttons_row3 = [
         InlineKeyboardButton("Поиск фильма 🔍", callback_data="search_command"),
-        InlineKeyboardButton("История 📚", callback_data="history_command"),
+        InlineKeyboardButton("Избранное 📚", callback_data="favorites_command"),
     ]
 
     # Создание разметки с кнопками
@@ -65,7 +65,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response += "Ожидаемые - Получить список ожидаемых фильмов\n"
     response += "Поиск фильма - После этой команды введите название фильма " \
                 "и бот предоставит результаты поиска\n"
-    response += "История - Просмотреть историю последних запросов\n"
+    response += "Избранное - Просмотреть фильмы добавленные в избранное\n"
 
     # Отправка сообщения с текстом команд и кнопками
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
@@ -136,5 +136,5 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # user_response = await context.bot.get_updates()
 
 
-async def history_command():
+async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pass
