@@ -95,6 +95,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, category: str):
+    category_names = {
+        "top": "топ рейтинга",
+        "popular": "популярных",
+        "upcoming": "ожидаемых",
+    }
+
     # Варианты числа фильмов для вывода в кнопках
     movie_counts = [1, 3, 5, 10]
 
@@ -105,16 +111,13 @@ async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAU
     ]
     keyboard = InlineKeyboardMarkup([buttons])
 
+    # Определение названия категории
+    category_name = category_names.get(category, category)
+
     # Отправка сообщения с вопросом о выборе числа фильмов
-    if category == "top":
-        category = "топ рейтинга"
-    elif category == "popular":
-        category = "популярных"
-    elif category == "upcoming":
-        category = "ожидаемых"
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Выберите количество {category} фильмов, которое хотите увидеть:",
+        text=f"Выберите количество {category_name} фильмов, которое хотите увидеть:",
         reply_markup=keyboard
     )
 
@@ -185,7 +188,6 @@ async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Список избранных фильмов пуст.")
         return
 
-    # Выводим ID фильмов
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Список избранных фильмов {len(favorite_movie_ids)}:")
 
     for movie_id in favorite_movie_ids:
