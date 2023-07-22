@@ -47,8 +47,13 @@ async def find_trailer(movie_id):
     if videos_data and "results" in videos_data:
         videos_results = videos_data["results"]
         trailer = next((video for video in videos_results if
-                        video.get("type") == "Trailer" and video.get(
-                            "official")), None)
+                        video.get("type") == "Trailer" and video.get("official")), None)
+
+        # Если не найден официальный трейлер, берем первый попавшийся трейлер с размером 720 из результатов
+        if not trailer:
+            trailer = next((video for video in videos_results if
+                            video.get("type") == "Trailer" and video.get("size") == 720), None)
+
         if trailer:
             trailer_key = trailer.get("key")
             trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
