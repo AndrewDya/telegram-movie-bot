@@ -5,9 +5,6 @@ from bot.utils import TOKEN
 from telegram.ext import ApplicationBuilder, CommandHandler, \
     CallbackQueryHandler, MessageHandler, filters
 
-from database.favorites import add_to_favorites, get_favorite_movies, \
-    remove_from_favorites
-
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
     start_handler = CommandHandler('start', start_command)

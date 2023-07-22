@@ -16,19 +16,19 @@ def search_movies(query):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Запрос к БД с поиском в нижнем регистре, ограничив результаты до 3
+    # Запрос к БД с поиском в нижнем регистре, результаты до 3
     query_lower = query.lower()
     cursor.execute("SELECT id FROM movies WHERE lower(title) LIKE ? LIMIT 3",
                    ('%' + query_lower + '%',))
     results_lower = cursor.fetchall()
 
-    # Запрос к БД с поиском по подстроке с заглавной буквой, ограничив результаты до 3
+    # Запрос к БД с поиском по подстроке с заглавной буквой, результаты до 3
     query_capitalized = query.capitalize()
     cursor.execute("SELECT id FROM movies WHERE title LIKE ? LIMIT 3",
                    ('%' + query_capitalized + '%',))
     results_capitalized = cursor.fetchall()
 
-    # Запрос к БД с поиском по подстроке с заглавными буквами, ограничив результаты до 3
+    # Запрос к БД с поиском по подстроке с заглавными буквами, результаты до 3
     query_title = query.title()
     cursor.execute("SELECT id FROM movies WHERE title LIKE ? LIMIT 3",
                    ('%' + query_title + '%',))

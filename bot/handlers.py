@@ -106,6 +106,12 @@ async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAU
     keyboard = InlineKeyboardMarkup([buttons])
 
     # Отправка сообщения с вопросом о выборе числа фильмов
+    if category == "top":
+        category = "топ рейтинга"
+    elif category == "popular":
+        category = "популярных"
+    elif category == "upcoming":
+        category = "ожидаемых"
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"Выберите количество {category} фильмов, которое хотите увидеть:",

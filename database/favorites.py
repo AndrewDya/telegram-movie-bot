@@ -13,12 +13,13 @@ def add_to_favorites(user_id, movie_id):
 
     if count == 0:
         # Если комбинации ещё нет, добавляем новую запись
-        cursor.execute('INSERT INTO favorites (user_id, movie_id) VALUES (?, ?)', (user_id, movie_id))
+        cursor.execute(
+            'INSERT INTO favorites (user_id, movie_id) VALUES (?, ?)',
+            (user_id, movie_id))
         conn.commit()
-        print(f"Фильм с ID {movie_id} добавлен в избранное для пользователя с ID {user_id}")
     else:
-        # Если комбинация уже существует, можно пропустить вставку или обновить существующую запись
-        print(f"Фильм с ID {movie_id} уже присутствует в избранном для пользователя с ID {user_id}")
+        # Если комбинация уже существует, просто возвращаемся, не выполняя вставку
+        return
 
     conn.close()
 
