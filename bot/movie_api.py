@@ -27,8 +27,12 @@ async def get_movie_details(movie_id):
         actors = [f"{actor['name']} ({actor['character']})" for actor in cast]
         director = next((member["name"] for member in crew if member["job"] == "Director"), None)
 
+        max_length = 350
         sentences = re.split(r'(?<=[.!?])\s+', overview)
-        overview = sentences[0] if sentences else 'Пока нет'
+        while len(' '.join(sentences)) > max_length:
+            sentences.pop()
+
+        overview = ' '.join(sentences) if sentences else 'Пока нет'
 
         return runtime, poster_url, genre_names, actors, budget, title, \
                 rating, overview, director
