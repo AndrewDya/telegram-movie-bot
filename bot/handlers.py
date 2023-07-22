@@ -1,8 +1,11 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes, CallbackContext
-from bot.movie_api import send_movie_info
+from bot.movie_api import send_movie_info, get_favorite_movie_details, \
+    get_data_from_id, get_title_from_id
 from bot.utils import API_KEY, language, send_http_request
 from database.database import search_movies
+from database.favorites import get_favorite_movies, add_to_favorites, \
+    remove_from_favorites
 
 
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,6 +33,22 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
         await search_command(update, context)
     elif button_data == "favorites_command":
         await favorites_command(update, context)
+    elif button_data.startswith("add_to_favorites_"):
+        movie_id = int(button_data.split("_")[3])
+        add_to_favorites(update.effective_user.id, movie_id)
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=f"Фильм {await get_title_from_id(movie_id)} добавлен в избранное!")
+    elif button_data.startswith("remove_from_favorites_"):
+        movie_id = int(button_data.split("_")[3])
+        remove_from_favorites(update.effective_user.id, movie_id)
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=f"Фильм {await get_title_from_id(movie_id)} удалён из избранного.")
+        await start_command(update, context)
+    elif button_data.startswith("view_movie_"):
+        movie_id = int(button_data.split("_")[2])
+        movie_data = await get_data_from_id(movie_id)
+        await send_movie_info(update, context, movie_data)
+        await start_command(update, context)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда")
 
@@ -76,6 +95,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, category: str):
+    category_names = {
+        "top": "топ рейтинга",
+        "popular": "популярных",
+        "upcoming": "ожидаемых",
+    }
+
     # Варианты числа фильмов для вывода в кнопках
     movie_counts = [1, 3, 5, 10]
 
@@ -86,10 +111,13 @@ async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAU
     ]
     keyboard = InlineKeyboardMarkup([buttons])
 
+    # Определение названия категории
+    category_name = category_names.get(category, category)
+
     # Отправка сообщения с вопросом о выборе числа фильмов
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Выберите количество {category} фильмов, которое хотите увидеть:",
+        text=f"Выберите количество {category_name} фильмов, которое хотите увидеть:",
         reply_markup=keyboard
     )
 
@@ -148,7 +176,19 @@ async def search_message(update: Update, context: CallbackContext):
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="По вашему запросу ничего не найдено.")
+    await start_command(update, context)
 
 
 async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    user_id = update.effective_user.id
+    favorite_movie_ids = get_favorite_movies(user_id)
+
+    if not favorite_movie_ids:
+        # Если список избранного пуст, уведомляем пользователя
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Список избранных фильмов пуст.")
+        return
+
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Список избранных фильмов {len(favorite_movie_ids)}:")
+
+    for movie_id in favorite_movie_ids:
+        await get_favorite_movie_details(update, context, movie_id)

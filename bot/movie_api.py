@@ -47,8 +47,13 @@ async def find_trailer(movie_id):
     if videos_data and "results" in videos_data:
         videos_results = videos_data["results"]
         trailer = next((video for video in videos_results if
-                        video.get("type") == "Trailer" and video.get(
-                            "official")), None)
+                        video.get("type") == "Trailer" and video.get("official")), None)
+
+        # Если не найден официальный трейлер, берем первый попавшийся трейлер с размером 720 из результатов
+        if not trailer:
+            trailer = next((video for video in videos_results if
+                            video.get("type") == "Trailer" and video.get("size") == 720), None)
+
         if trailer:
             trailer_key = trailer.get("key")
             trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
@@ -100,3 +105,47 @@ async def send_movie_info(update, context, movies):
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text="Ошибка при загрузке фотографии")
+
+
+async def get_favorite_movie_details(update, context, movie_id):
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language=ru-RU"
+
+    data = await send_http_request(url)
+    if data:
+        title = data.get("title")
+        rating = round(data.get("vote_average"), 1)
+        runtime = data.get("runtime")
+        movie_info = f"{title}. Рейтинг: {rating}. Продолжительность: {runtime} минут"
+        movie_data = [data]
+
+        # Добавляем кнопки "Удалить из избранного" и "Полная информация"
+        buttons_row1 = [
+            InlineKeyboardButton("Просмотр",
+                                 callback_data=f"view_movie_{movie_id}"),
+            InlineKeyboardButton("Удалить из избранного",
+                                 callback_data=f"remove_from_favorites_{movie_id}"),
+        ]
+
+        keyboard = InlineKeyboardMarkup([buttons_row1])
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=movie_info,
+            reply_markup=keyboard
+        )
+        return movie_data
+
+
+async def get_data_from_id(movie_id):
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language=ru-RU"
+    movie_data = await send_http_request(url)
+    if movie_data:
+        return [movie_data]
+
+
+async def get_title_from_id(movie_id):
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language=ru-RU"
+    data = await send_http_request(url)
+    if data:
+        title = data.get("title")
+        return title
