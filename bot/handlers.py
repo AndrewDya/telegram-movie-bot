@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes, CallbackContext
 from bot.movie_api import send_movie_info
 from bot.utils import API_KEY, language, send_http_request
 from database.database import search_movies
+from database.favorites import get_favorite_movies, add_to_favorites
 
 
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,6 +31,11 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
         await search_command(update, context)
     elif button_data == "favorites_command":
         await favorites_command(update, context)
+    elif button_data.startswith("add_to_favorites_"):
+        movie_id = int(button_data.split("_")[3])
+        add_to_favorites(update.effective_user.id, movie_id)
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text="Фильм добавлен в избранное!")
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда")
 
@@ -151,4 +157,14 @@ async def search_message(update: Update, context: CallbackContext):
 
 
 async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    user_id = update.effective_user.id
+    favorite_movie_ids = get_favorite_movies(user_id)
+
+    if not favorite_movie_ids:
+        # Если список избранного пуст, уведомляем пользователя
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Список избранных фильмов пуст.")
+        return
+
+    # Выводим ID фильмов
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text=f"Список избранных фильмов: {favorite_movie_ids}")

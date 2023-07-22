@@ -3,7 +3,10 @@ from bot.handlers import start_command, help_command, popular_command, \
     handle_button_press, search_message
 from bot.utils import TOKEN
 from telegram.ext import ApplicationBuilder, CommandHandler, \
-    CallbackQueryHandler, MessageHandler, filters, ConversationHandler
+    CallbackQueryHandler, MessageHandler, filters
+
+from database.favorites import add_to_favorites, get_favorite_movies, \
+    remove_from_favorites
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
