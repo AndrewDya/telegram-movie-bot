@@ -1,7 +1,8 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CallbackContext
 from bot.movie_api import send_movie_info
 from bot.utils import API_KEY, language, send_http_request
+from database.database import search_movies
 
 
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -128,12 +129,25 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         await get_movies_by_url(update, context, url, selected_count)
 
 
-async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
-    # await context.bot.send_message(chat_id=update.effective_chat.id, text="Введите название фильма для поиска:")
-    #
-    # # Получаем ответ пользователя
-    # user_response = await context.bot.get_updates()
+async def search_command(update: Update, context: CallbackContext):
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Введите название фильма:")
+
+
+async def search_message(update: Update, context: CallbackContext):
+    user_input = update.message.text
+    movie_ids = search_movies(user_input)  # Список id фильмов
+    movies = []
+    for movie_id in movie_ids:
+        url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
+        data = await send_http_request(url)
+        if data:
+            movies.append(data)
+
+    if movies:
+        await send_movie_info(update, context, movies)
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="По вашему запросу ничего не найдено.")
 
 
 async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

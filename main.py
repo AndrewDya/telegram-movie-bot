@@ -1,10 +1,9 @@
 from bot.handlers import start_command, help_command, popular_command, \
     top_rated_command, upcoming_command, search_command, favorites_command, \
-    handle_button_press
+    handle_button_press, search_message
 from bot.utils import TOKEN
 from telegram.ext import ApplicationBuilder, CommandHandler, \
-    CallbackQueryHandler
-
+    CallbackQueryHandler, MessageHandler, filters, ConversationHandler
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
@@ -15,6 +14,8 @@ if __name__ == '__main__':
     upcoming_handler = CommandHandler('upcoming', upcoming_command)
     search_handler = CommandHandler('search', search_command)
     favorites_handler = CommandHandler('favorites', favorites_command)
+    message_search_handler = MessageHandler(filters.TEXT & (~filters.COMMAND),
+                                     search_message)
 
     # Обработчик callback query
     app.add_handler(CallbackQueryHandler(handle_button_press))
@@ -26,5 +27,6 @@ if __name__ == '__main__':
     app.add_handler(upcoming_handler)
     app.add_handler(search_handler)
     app.add_handler(favorites_handler)
+    app.add_handler(message_search_handler)
 
     app.run_polling()
