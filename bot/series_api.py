@@ -1,8 +1,4 @@
-import io
-import re
-from datetime import datetime
-from bot.utils import API_KEY, send_http_request, load_photo_content, language
-
+from bot.utils import load_photo_content, language
 import io
 from datetime import datetime
 from bot.utils import API_KEY, send_http_request
