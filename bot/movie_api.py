@@ -1,6 +1,7 @@
 import io
 import locale
 import re
+from datetime import datetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from bot.utils import API_KEY, language, send_http_request, load_photo_content
 
@@ -14,14 +15,19 @@ async def get_movie_details(movie_id):
         runtime = data.get("runtime")
         genres = data.get("genres")
         budget = data.get("budget")
+        revenue = data.get("revenue")
         title = data.get("title")
+        status = data.get("status")
         rating = round(data.get("vote_average"), 1)
         overview = data.get("overview")
+        release_date = data.get("release_date")
         cast = data.get("credits", {}).get("cast", [])[:3]
         crew = data.get("credits", {}).get("crew", [])
 
         budget = locale.format_string("%d", budget, grouping=True) if budget else 'Неизвестен'
+        revenue = locale.format_string("%d", revenue, grouping=True) if revenue else 'Неизвестны'
         poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+        rating = "Ещё не выставлен" if rating == 0 else rating
 
         genre_names = [genre["name"] for genre in genres if genre.get("id") in {g["id"] for g in genres}]
         actors = [f"{actor['name']} ({actor['character']})" for actor in cast]
@@ -32,10 +38,27 @@ async def get_movie_details(movie_id):
         while len(' '.join(sentences)) > max_length:
             sentences.pop()
 
+        date_obj = datetime.strptime(release_date, "%Y-%m-%d")
+        months = [
+            "января", "февраля", "марта", "апреля", "мая", "июня",
+            "июля", "августа", "сентября", "октября", "ноября", "декабря"
+        ]
+        day = date_obj.day
+        month = months[date_obj.month - 1]
+        year = date_obj.year
+
+        new_status = {
+            "Post Production": "Постпродакшн",
+            "In Production": "В производстве",
+            "Released": "Выпущен"
+        }.get(status, "Неизвестный статус")
+
+        formatted_date = f"{day} {month} {year}г."
+
         overview = ' '.join(sentences) if sentences else 'Пока нет'
 
         return runtime, poster_url, genre_names, actors, budget, title, \
-                rating, overview, director
+                rating, overview, director, revenue, formatted_date, new_status
 
     return None
 
@@ -46,16 +69,34 @@ async def find_trailer(movie_id):
 
     if videos_data and "results" in videos_data:
         videos_results = videos_data["results"]
-        trailer = next((video for video in videos_results if
-                        video.get("type") == "Trailer" and video.get("official")), None)
+
+        # Ищем трейлер на русском языке
+        russian_trailer = next((video for video in videos_results if
+                                video.get("type") == "Trailer" and
+                                video.get("iso_639_1") == "ru"), None)
+
+        if russian_trailer:
+            trailer_key = russian_trailer.get("key")
+            trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
+            return trailer_url
+
+        # Если не найден русский трейлер, ищем официальный трейлер
+        official_trailer = next((video for video in videos_results if
+                                 video.get("type") == "Trailer" and
+                                 video.get("official")), None)
+
+        if official_trailer:
+            trailer_key = official_trailer.get("key")
+            trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
+            return trailer_url
 
         # Если не найден официальный трейлер, берем первый попавшийся трейлер с размером 720 из результатов
-        if not trailer:
-            trailer = next((video for video in videos_results if
-                            video.get("type") == "Trailer" and video.get("size") == 720), None)
+        any_trailer = next((video for video in videos_results if
+                            video.get("type") == "Trailer" and
+                            video.get("size") == 720), None)
 
-        if trailer:
-            trailer_key = trailer.get("key")
+        if any_trailer:
+            trailer_key = any_trailer.get("key")
             trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
             return trailer_url
 
@@ -65,13 +106,17 @@ async def find_trailer(movie_id):
 async def view_movie_info(movie):
     movie_id = movie.get("id")
     runtime, poster_url, genre_names, actors, budget, title, rating, \
-        overview, director = await get_movie_details(movie_id)
+        overview, director, revenue, formatted_date, new_status\
+        = await get_movie_details(movie_id)
 
     movie_info = f"{title}\n"
     movie_info += f"Рейтинг: {rating}\n"
     movie_info += f"Жанр: {', '.join(genre_names)}\n"
     movie_info += f"Продолжительность: {runtime} минут\n"
     movie_info += f"Бюджет: ${budget}\n"
+    movie_info += f"Сборы: ${revenue}\n"
+    movie_info += f"Статус фильма: {new_status}\n"
+    movie_info += f"Дата выхода: {formatted_date}\n"
     movie_info += f"Режиссёр: {director}\n"
     movie_info += f"Описание: {overview}\n"
     movie_info += f"Актёры: {', '.join(actors)}\n"
