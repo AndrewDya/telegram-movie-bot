@@ -1,5 +1,6 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes, CallbackContext
+from bot.actors_api import send_actors_info
 from bot.movie_api import send_movie_info, get_favorite_movie_details, \
     get_data_from_id, get_title_from_id
 from bot.utils import API_KEY, language, send_http_request
@@ -49,6 +50,13 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
         movie_data = await get_data_from_id(movie_id)
         await send_movie_info(update, context, movie_data)
         await start_command(update, context)
+    elif button_data == "actors_popular_command":
+        await actors_popular_command(update, context, selected_count=None)
+    elif button_data.startswith("actors_popular_"):
+        selected_count = int(button_data.split("_")[2])
+        await actors_popular_command(update, context, selected_count)
+    elif button_data == "series_popular_command":
+        await series_popular_command(update, context, selected_count=None)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда")
 
@@ -68,8 +76,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         InlineKeyboardButton("Избранное 📚", callback_data="favorites_command"),
     ]
 
+    buttons_row4 = [
+        InlineKeyboardButton("Популярные актёры 🌟", callback_data="actors_popular_command"),
+        InlineKeyboardButton("Популярные сериалы 📺", callback_data="series_popular_command"),
+    ]
+
     # Создание разметки с кнопками
-    keyboard = InlineKeyboardMarkup([buttons_row1, buttons_row2, buttons_row3])
+    keyboard = InlineKeyboardMarkup([buttons_row1, buttons_row2, buttons_row3, buttons_row4])
 
     # Отправка сообщения с кнопками
     await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -86,6 +99,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response += "Поиск фильма - После этой команды введите название фильма " \
                 "и бот предоставит результаты поиска\n"
     response += "Избранное - Просмотреть фильмы добавленные в избранное\n"
+    response += "Популярные актёры - Получить список популярных актёров\n"
+    response += "Популярные сериалы - Получить список популярных сериалов\n"
 
     # Отправка сообщения с текстом команд и кнопками
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
@@ -96,9 +111,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, category: str):
     category_names = {
-        "top": "топ рейтинга",
-        "popular": "популярных",
-        "upcoming": "ожидаемых",
+        "top": "топ рейтинга фильмов",
+        "popular": "популярных фильмов",
+        "upcoming": "ожидаемых фильмов",
+        "actors_popular": "популярных актёров",
     }
 
     # Варианты числа фильмов для вывода в кнопках
@@ -117,7 +133,7 @@ async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAU
     # Отправка сообщения с вопросом о выборе числа фильмов
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Выберите количество {category_name} фильмов, которое хотите увидеть:",
+        text=f"Выберите количество {category_name}, которое хотите увидеть:",
         reply_markup=keyboard
     )
 
@@ -130,6 +146,18 @@ async def get_movies_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text=f"Ошибка при получении данных о фильмах")
+    await start_command(update, context)
+
+
+async def get_actors_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str, selected_count: int):
+    data = await send_http_request(url)
+    if data and "results" in data:
+        actors = data["results"][:selected_count]
+        await send_actors_info(update, context, actors)
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Ошибка при получении данных об актёрах"
+        )
     await start_command(update, context)
 
 
@@ -192,3 +220,15 @@ async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for movie_id in favorite_movie_ids:
         await get_favorite_movie_details(update, context, movie_id)
+
+
+async def actors_popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+    if selected_count is None:
+        await create_movie_count_buttons(update, context, "actors_popular")
+    else:
+        url = f"https://api.themoviedb.org/3/person/popular?api_key={API_KEY}&page=1&language={language}"
+        await get_actors_by_url(update, context, url, selected_count)
+
+
+async def series_popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+    pass
