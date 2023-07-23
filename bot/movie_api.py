@@ -1,6 +1,5 @@
 import io
 import locale
-import re
 from datetime import datetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from bot.utils import API_KEY, language, send_http_request, load_photo_content
@@ -33,10 +32,12 @@ async def get_movie_details(movie_id):
         actors = [f"{actor['name']} ({actor['character']})" for actor in cast]
         director = next((member["name"] for member in crew if member["job"] == "Director"), None)
 
-        max_length = 350
-        sentences = re.split(r'(?<=[.!?])\s+', overview)
-        while len(' '.join(sentences)) > max_length:
-            sentences.pop()
+        if overview:
+            max_length = 350
+            overview = overview[:max_length] + (
+                        overview[max_length:] and '...')
+        else:
+            overview = 'Пока нет'
 
         date_obj = datetime.strptime(release_date, "%Y-%m-%d")
         months = [
@@ -55,7 +56,6 @@ async def get_movie_details(movie_id):
 
         formatted_date = f"{day} {month} {year}г."
 
-        overview = ' '.join(sentences) if sentences else 'Пока нет'
 
         return runtime, poster_url, genre_names, actors, budget, title, \
                 rating, overview, director, revenue, formatted_date, new_status
