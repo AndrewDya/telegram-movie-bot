@@ -1,7 +1,6 @@
 import io
-import re
-from datetime import datetime
-from bot.utils import send_http_request, API_KEY, load_photo_content
+from bot.utils import send_http_request, API_KEY, load_photo_content, \
+    format_date, process_overview
 
 
 async def get_actor_details(actor_id):
@@ -14,26 +13,9 @@ async def get_actor_details(actor_id):
         birthday = data.get("birthday")
         biography = data.get("biography")
 
-        # Формируем дату рождения в нужном формате (день месяц год)
-        date_obj = datetime.strptime(birthday, "%Y-%m-%d")
-        months = [
-            "января", "февраля", "марта", "апреля", "мая", "июня",
-            "июля", "августа", "сентября", "октября", "ноября", "декабря"
-        ]
-        day = date_obj.day
-        month = months[date_obj.month - 1]
-        year = date_obj.year
-
-        formatted_birthday = f"{day} {month} {year}г."
-
+        formatted_birthday = await format_date(birthday)
         photo_url = f"https://image.tmdb.org/t/p/w500{profile_path}" if profile_path else None
-
-        max_length = 350
-        sentences = re.split(r'(?<=[.!?])\s+', biography)
-        while len(' '.join(sentences)) > max_length:
-            sentences.pop()
-
-        overview = ' '.join(sentences) if sentences else 'Пока нет информации'
+        overview = await process_overview(biography)
 
         return actor_name, photo_url, formatted_birthday, overview
 

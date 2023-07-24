@@ -1,8 +1,8 @@
 import io
 import locale
-from datetime import datetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from bot.utils import API_KEY, language, send_http_request, load_photo_content
+from bot.utils import API_KEY, language, send_http_request, load_photo_content, \
+    process_overview, format_date, get_cast_genres, get_status_description
 
 
 async def get_movie_details(movie_id):
@@ -28,34 +28,10 @@ async def get_movie_details(movie_id):
         poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
         rating = "Ещё не выставлен" if rating == 0 else rating
 
-        genre_names = [genre["name"] for genre in genres if genre.get("id") in {g["id"] for g in genres}]
-        actors = [f"{actor['name']} ({actor['character']})" for actor in cast]
-        director = next((member["name"] for member in crew if member["job"] == "Director"), None)
-
-        if overview:
-            max_length = 350
-            overview = overview[:max_length] + (
-                        overview[max_length:] and '...')
-        else:
-            overview = 'Пока нет'
-
-        date_obj = datetime.strptime(release_date, "%Y-%m-%d")
-        months = [
-            "января", "февраля", "марта", "апреля", "мая", "июня",
-            "июля", "августа", "сентября", "октября", "ноября", "декабря"
-        ]
-        day = date_obj.day
-        month = months[date_obj.month - 1]
-        year = date_obj.year
-
-        new_status = {
-            "Post Production": "Постпродакшн",
-            "In Production": "В производстве",
-            "Released": "Выпущен"
-        }.get(status, "Неизвестный статус")
-
-        formatted_date = f"{day} {month} {year}г."
-
+        genre_names, actors, director = await get_cast_genres(genres, cast,crew)
+        overview = await process_overview(overview)
+        formatted_date = await format_date(release_date)
+        new_status = await get_status_description(status)
 
         return runtime, poster_url, genre_names, actors, budget, title, \
                 rating, overview, director, revenue, formatted_date, new_status
@@ -153,7 +129,7 @@ async def send_movie_info(update, context, movies):
 
 
 async def get_favorite_movie_details(update, context, movie_id):
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language=ru-RU"
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
 
     data = await send_http_request(url)
     if data:
@@ -182,14 +158,14 @@ async def get_favorite_movie_details(update, context, movie_id):
 
 
 async def get_data_from_id(movie_id):
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language=ru-RU"
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
     movie_data = await send_http_request(url)
     if movie_data:
         return [movie_data]
 
 
 async def get_title_from_id(movie_id):
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language=ru-RU"
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
     data = await send_http_request(url)
     if data:
         title = data.get("title")

@@ -1,6 +1,6 @@
-from bot.utils import load_photo_content, language
+from bot.utils import load_photo_content, language, process_overview, \
+    format_date, get_cast_genres, get_status_description
 import io
-from datetime import datetime
 from bot.utils import API_KEY, send_http_request
 
 
@@ -22,42 +22,10 @@ async def get_series_details(series_id):
         poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
         rating = "Ещё не выставлен" if rating == 0 else rating
 
-        genre_names = [genre["name"] for genre in genres if
-                       genre.get("id") in {g["id"] for g in genres}]
-        actors = [f"{actor['name']} ({actor['character']})" for actor in cast]
-        director = next(
-            (member["name"] for member in crew if member["job"] == "Director"),
-            None)
-
-        director = director if director is not None else "Нет информации"
-
-        if overview:
-            max_length = 350
-            overview = overview[:max_length] + (
-                        overview[max_length:] and '...')
-        else:
-            overview = 'Пока нет'
-
-        date_obj = datetime.strptime(first_air_date, "%Y-%m-%d")
-        months = [
-            "января", "февраля", "марта", "апреля", "мая", "июня",
-            "июля", "августа", "сентября", "октября", "ноября", "декабря"
-        ]
-        day = date_obj.day
-        month = months[date_obj.month - 1]
-        year = date_obj.year
-
-        new_status = {
-            "Post Production": "Постпродакшн",
-            "In Production": "В производстве",
-            "Returning Series": "Онлайн",
-            "Planned": "Запланирован",
-            "Canceled": "Отменен",
-            "Pilot": "Пилотный выпуск",
-            "Ended": "Завершен"
-        }.get(status, "Неизвестный статус")
-
-        formatted_date = f"{day} {month} {year}г."
+        genre_names, actors, director = await get_cast_genres(genres, cast, crew)
+        overview = await process_overview(overview)
+        formatted_date = await format_date(first_air_date)
+        new_status = await get_status_description(status)
 
         return poster_url, genre_names, actors, title, \
             rating, overview, director, formatted_date, new_status
