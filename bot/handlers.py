@@ -17,23 +17,39 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
         await help_command(update, context)
     elif button_data == "popular_command":
         await popular_command(update, context, selected_count=None)
-    elif button_data.startswith("popular_"):
-        selected_count = int(button_data.split("_")[1])
-        await popular_command(update, context, selected_count)
     elif button_data == "top_rated_command":
         await top_rated_command(update, context, selected_count=None)
+    elif button_data == "upcoming_command":
+        await upcoming_command(update, context, selected_count=None)
+    elif button_data == "actors_popular_command":
+        await actors_popular_command(update, context, selected_count=None)
+    elif button_data == "series_popular_command":
+        await series_popular_command(update, context, selected_count=None)
+    elif button_data == "search_command":
+        await search_command(update, context)
+    elif button_data == "search_request":
+        await search_request(update, context)
+    # elif button_data == "search_actors":
+    #     await search_actors(update, context)
+    # elif button_data == "search_series":
+    #     await search_series(update, context)
+    elif button_data == "favorites_command":
+        await favorites_command(update, context)
     elif button_data.startswith("top_"):
         selected_count = int(button_data.split("_")[1])
         await top_rated_command(update, context, selected_count)
-    elif button_data == "upcoming_command":
-        await upcoming_command(update, context, selected_count=None)
     elif button_data.startswith("upcoming_"):
         selected_count = int(button_data.split("_")[1])
         await upcoming_command(update, context, selected_count)
-    elif button_data == "search_command":
-        await search_command(update, context)
-    elif button_data == "favorites_command":
-        await favorites_command(update, context)
+    elif button_data.startswith("popular_"):
+        selected_count = int(button_data.split("_")[1])
+        await popular_command(update, context, selected_count)
+    elif button_data.startswith("actors_popular_"):
+        selected_count = int(button_data.split("_")[2])
+        await actors_popular_command(update, context, selected_count)
+    elif button_data.startswith("series_popular_"):
+        selected_count = int(button_data.split("_")[2])
+        await series_popular_command(update, context, selected_count)
     elif button_data.startswith("add_to_favorites_"):
         movie_id = int(button_data.split("_")[3])
         add_to_favorites(update.effective_user.id, movie_id)
@@ -50,16 +66,6 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
         movie_data = await get_data_from_id(movie_id)
         await send_movie_info(update, context, movie_data)
         await start_command(update, context)
-    elif button_data == "actors_popular_command":
-        await actors_popular_command(update, context, selected_count=None)
-    elif button_data.startswith("actors_popular_"):
-        selected_count = int(button_data.split("_")[2])
-        await actors_popular_command(update, context, selected_count)
-    elif button_data == "series_popular_command":
-        await series_popular_command(update, context, selected_count=None)
-    elif button_data.startswith("series_popular_"):
-        selected_count = int(button_data.split("_")[2])
-        await series_popular_command(update, context, selected_count)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда")
 
@@ -75,7 +81,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         InlineKeyboardButton("Ожидаемые 🚀", callback_data="upcoming_command"),
     ]
     buttons_row3 = [
-        InlineKeyboardButton("Поиск фильма 🔍", callback_data="search_command"),
+        InlineKeyboardButton("Поиск 🔍", callback_data="search_command"),
         InlineKeyboardButton("Избранное 📚", callback_data="favorites_command"),
     ]
 
@@ -85,7 +91,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     # Создание разметки с кнопками
-    keyboard = InlineKeyboardMarkup([buttons_row1, buttons_row2, buttons_row3, buttons_row4])
+    keyboard = InlineKeyboardMarkup([buttons_row1, buttons_row2, buttons_row3,
+                                     buttons_row4])
 
     # Отправка сообщения с кнопками
     await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -166,34 +173,69 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         await get_movies_by_url(update, context, url, selected_count)
 
 
-async def search_command(update: Update, context: CallbackContext):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Введите название фильма:")
+async def actors_popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+    if selected_count is None:
+        await create_movie_count_buttons(update, context, "actors_popular")
+    else:
+        url = f"https://api.themoviedb.org/3/person/popular?api_key={API_KEY}&page=1&language={language}"
+        await get_actors_by_url(update, context, url, selected_count)
 
 
-async def search_message(update: Update, context: CallbackContext):
+async def series_popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+    if selected_count is None:
+        await create_movie_count_buttons(update, context, "series_popular")
+    else:
+        url = f"https://api.themoviedb.org/3/tv/popular?api_key={API_KEY}&language={language}"
+        await get_series_by_url(update, context, url, selected_count)
+
+
+async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Создание кнопок категорий поиска
+    buttons = [
+        [
+            InlineKeyboardButton("Фильмы 🎬", callback_data="search_request"),
+            InlineKeyboardButton("Актёры 🌟", callback_data="search_actors"),
+            InlineKeyboardButton("Сериалы 📺", callback_data="search_series"),
+        ],
+        [InlineKeyboardButton("Отмена ❌", callback_data="cancel_search")],
+    ]
+
+    # Создание разметки с кнопками
+    keyboard = InlineKeyboardMarkup(buttons)
+
+    # Отправка сообщения с кнопками категорий поиска
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Выберите категорию для поиска:",
+        reply_markup=keyboard,
+    )
+
+
+async def search_request(update: Update, context: CallbackContext):
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text="Введите поисковый запрос:")
+
+
+async def search_movies(update: Update, context: CallbackContext):
     user_query = update.message.text
     url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={user_query}&language={language}"
-    data = await send_http_request(url)
-
-    if data and "results" in data:
-        movies = data["results"][:5]
-        if movies:
-            await send_movie_info(update, context, movies)
-        else:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id, text="По вашему запросу ничего не найдено.")
-
-    await start_command(update, context)
+    await get_movies_by_url(update, context, url, 5)
 
 
-async def search_actor(update: Update, context: CallbackContext):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Введите имя актёра:")
-
-
-async def search_actor_message(update: Update, context: CallbackContext):
-    user_query = update.message.text
-    url = f"https://api.themoviedb.org/3/search/person?api_key={API_KEY}&query={user_query}&language={language}"
-    await get_actors_by_url(update, context, url, 5)
+# async def search_actors(update: Update, context: CallbackContext):
+#     await context.bot.send_message(chat_id=update.effective_chat.id,
+#                                    text="Введите название актёра:")
+#     user_query = update.message.text
+#     url = f"https://api.themoviedb.org/3/search/person?api_key={API_KEY}&query={user_query}&language={language}"
+#     await get_actors_by_url(update, context, url, 5)
+#
+#
+# async def search_series(update: Update, context: CallbackContext):
+#     await context.bot.send_message(chat_id=update.effective_chat.id,
+#                                    text="Введите название сериала:")
+#     user_query = update.message.text
+#     url = f"https://api.themoviedb.org/3/search/tv?api_key={API_KEY}&query={user_query}&language={language}"
+#     await get_series_by_url(update, context, url, 5)
 
 
 async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -209,22 +251,6 @@ async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for movie_id in favorite_movie_ids:
         await get_favorite_movie_details(update, context, movie_id)
-
-
-async def actors_popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
-    if selected_count is None:
-        await create_movie_count_buttons(update, context, "actors_popular")
-    else:
-        url = f"https://api.themoviedb.org/3/person/popular?api_key={API_KEY}&page=1&language={language}"
-        await get_actors_by_url(update, context, url, selected_count)
-
-
-async def series_popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
-    if selected_count is None:
-        await create_movie_count_buttons(update, context, "series_popular")
-    else:
-        url = f"https://api.themoviedb.org/3/tv/popular?api_key={API_KEY}&language={language}"
-        await get_series_by_url(update, context, url, selected_count)
 
 
 async def get_movies_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str, selected_count: int,):

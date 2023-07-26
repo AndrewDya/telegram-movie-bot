@@ -1,7 +1,7 @@
 from bot.handlers import start_command, help_command, popular_command, \
     top_rated_command, upcoming_command, search_command, favorites_command, \
-    handle_button_press, search_message, actors_popular_command, \
-    series_popular_command
+    handle_button_press, actors_popular_command, series_popular_command, \
+    search_movies
 from bot.utils import TOKEN
 from telegram.ext import ApplicationBuilder, CommandHandler, \
     CallbackQueryHandler, MessageHandler, filters
@@ -17,8 +17,6 @@ if __name__ == '__main__':
     upcoming_handler = CommandHandler('upcoming', upcoming_command)
     search_handler = CommandHandler('search', search_command)
     favorites_handler = CommandHandler('favorites', favorites_command)
-    message_search_handler = MessageHandler(filters.TEXT & (~filters.COMMAND),
-                                     search_message)
     actors_popular_handler = CommandHandler('actors_popular', actors_popular_command)
     series_popular_handler = CommandHandler('series_popular', series_popular_command)
 
@@ -27,6 +25,7 @@ if __name__ == '__main__':
 
     db.connect()
     db.create_tables([FavoriteMovie], safe=True)
+
     app.add_handler(start_handler)
     app.add_handler(help_handler)
     app.add_handler(popular_handler)
@@ -34,9 +33,17 @@ if __name__ == '__main__':
     app.add_handler(upcoming_handler)
     app.add_handler(search_handler)
     app.add_handler(favorites_handler)
-    app.add_handler(message_search_handler)
-    app.add_handler(actors_popular_handler)
-    app.add_handler(series_popular_handler)
+
+    movies_search_handler = MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                           search_movies)
+    # actors_search_handler = MessageHandler(filters.TEXT & ~filters.COMMAND,
+    #                                        search_actors)
+    # series_search_handler = MessageHandler(filters.TEXT & ~filters.COMMAND,
+    #                                        search_series)
+
+    app.add_handler(movies_search_handler)
+    # app.add_handler(actors_search_handler)
+    # app.add_handler(series_search_handler)
 
     app.run_polling()
     db.close()
