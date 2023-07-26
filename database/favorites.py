@@ -1,52 +1,41 @@
-import sqlite3
-from database.database import get_db_path
+from peewee import SqliteDatabase, Model, CharField, IntegrityError
+
+# Определяем модель для таблицы favorites
+db = SqliteDatabase("database/movies.db")
 
 
+class FavoriteMovie(Model):
+    user_id = CharField()
+    movie_id = CharField()
+
+    class Meta:
+        database = db
+
+
+# Функция для добавления фильма в избранное
 def add_to_favorites(user_id, movie_id):
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
-    # Проверяем, существует ли комбинация user_id и movie_id в таблице
-    cursor.execute('SELECT COUNT(*) FROM favorites WHERE user_id = ? AND movie_id = ?', (user_id, movie_id))
-    count = cursor.fetchone()[0]
-
-    if count == 0:
-        # Если комбинации ещё нет, добавляем новую запись
-        cursor.execute(
-            'INSERT INTO favorites (user_id, movie_id) VALUES (?, ?)',
-            (user_id, movie_id))
-        conn.commit()
-    else:
-        # Если комбинация уже существует, просто возвращаемся, не выполняя вставку
+    try:
+        FavoriteMovie.create(user_id=user_id, movie_id=movie_id)
+    except IntegrityError:
+        # Если комбинация user_id и movie_id существует, просто возвращаемся
         return
 
-    conn.close()
 
-
+# Функция для удаления фильма из избранного
 def remove_from_favorites(user_id, movie_id):
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    try:
+        favorite_movie = FavoriteMovie.get(
+            (FavoriteMovie.user_id == user_id) & (
+                FavoriteMovie.movie_id == movie_id))
+        favorite_movie.delete_instance()
+    except FavoriteMovie.DoesNotExist:
+        # Если комбинация user_id и movie_id не найдена, просто возвращаемся
+        return
 
-    cursor.execute('DELETE FROM favorites WHERE user_id = ? AND movie_id = ?', (user_id, movie_id))
 
-    conn.commit()
-    conn.close()
-
-
+# Функция для получения списка избранных фильмов пользователя
 def get_favorite_movies(user_id):
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
-    cursor.execute('SELECT movie_id FROM favorites WHERE user_id = ?', (user_id,))
-    results = cursor.fetchall()
-
-    favorite_movie_ids = [result[0] for result in results]
-
-    conn.close()
-
+    favorite_movie_ids = [
+        favorite.movie_id for favorite in FavoriteMovie.select().where(
+            FavoriteMovie.user_id == user_id)]
     return favorite_movie_ids
-
-

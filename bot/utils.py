@@ -101,3 +101,12 @@ async def get_status_description(status):
         "Released": "Выпущен",
     }
     return status_mapping.get(status, "Неизвестный статус")
+
+
+# Получаем абсолютный путь, указывая относительный путь, начиная с папки проекта
+def get_db_path(file):
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    db_path = os.path.join(parent_dir, file)
+
+    return db_path

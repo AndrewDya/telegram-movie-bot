@@ -6,6 +6,8 @@ from bot.utils import TOKEN
 from telegram.ext import ApplicationBuilder, CommandHandler, \
     CallbackQueryHandler, MessageHandler, filters
 
+from database.favorites import db, FavoriteMovie
+
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
     start_handler = CommandHandler('start', start_command)
@@ -23,6 +25,8 @@ if __name__ == '__main__':
     # Обработчик callback query
     app.add_handler(CallbackQueryHandler(handle_button_press))
 
+    db.connect()
+    db.create_tables([FavoriteMovie], safe=True)
     app.add_handler(start_handler)
     app.add_handler(help_handler)
     app.add_handler(popular_handler)
@@ -35,3 +39,4 @@ if __name__ == '__main__':
     app.add_handler(series_popular_handler)
 
     app.run_polling()
+    db.close()
