@@ -5,7 +5,6 @@ from bot.movie_api import send_movie_info, get_favorite_movie_details, \
     get_data_from_id, get_title_from_id
 from bot.series_api import send_series_info
 from bot.utils import API_KEY, language, send_http_request
-from database.database import search_movies
 from database.favorites import get_favorite_movies, add_to_favorites, \
     remove_from_favorites
 
@@ -172,21 +171,29 @@ async def search_command(update: Update, context: CallbackContext):
 
 
 async def search_message(update: Update, context: CallbackContext):
-    user_input = update.message.text
-    movie_ids = search_movies(user_input)  # Список id фильмов
-    movies = []
-    for movie_id in movie_ids:
-        url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
-        data = await send_http_request(url)
-        if data:
-            movies.append(data)
+    user_query = update.message.text
+    url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={user_query}&language={language}"
+    data = await send_http_request(url)
 
-    if movies:
-        await send_movie_info(update, context, movies)
-    else:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="По вашему запросу ничего не найдено.")
+    if data and "results" in data:
+        movies = data["results"][:5]
+        if movies:
+            await send_movie_info(update, context, movies)
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, text="По вашему запросу ничего не найдено.")
+
     await start_command(update, context)
+
+
+async def search_actor(update: Update, context: CallbackContext):
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Введите имя актёра:")
+
+
+async def search_actor_message(update: Update, context: CallbackContext):
+    user_query = update.message.text
+    url = f"https://api.themoviedb.org/3/search/person?api_key={API_KEY}&query={user_query}&language={language}"
+    await get_actors_by_url(update, context, url, 5)
 
 
 async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
