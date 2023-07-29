@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ContextTypes, CallbackContext
+from telegram.ext import ContextTypes, CallbackContext, MessageHandler, filters
 from bot.actors_api import send_actors_info
 from bot.movie_api import send_movie_info, get_favorite_movie_details, \
     get_data_from_id, get_title_from_id
@@ -12,6 +12,7 @@ from database.favorites import get_favorite_movies, add_to_favorites, \
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     button_data = query.data
+    global search_category
 
     if button_data == "help_command":
         await help_command(update, context)
@@ -29,8 +30,14 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
         await search_command(update, context)
     elif button_data.startswith("search_request_"):
         await search_request(update, context)
-        category = button_data.split("_")[2]
-        #TODO реализовать конкретный обработчик текста
+        search_category = button_data.split("_")[2]
+    elif button_data == "cancel_search":
+        search_category = None
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Поиск отменен.",
+        )
+        await start_command(update, context)
     elif button_data == "favorites_command":
         await favorites_command(update, context)
     elif button_data.startswith("top_"):
@@ -188,12 +195,16 @@ async def series_popular_command(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global search_category
     # Создание кнопок категорий поиска
     buttons = [
         [
-            InlineKeyboardButton("Фильмы 🎬", callback_data="search_request_movies"),
-            InlineKeyboardButton("Актёры 🌟", callback_data="search_request_actors"),
-            InlineKeyboardButton("Сериалы 📺", callback_data="search_request_series"),
+            InlineKeyboardButton("Фильмы 🎬",
+                                 callback_data="search_request_movies"),
+            InlineKeyboardButton("Актёры 🌟",
+                                 callback_data="search_request_actors"),
+            InlineKeyboardButton("Сериалы 📺",
+                                 callback_data="search_request_series"),
         ],
         [InlineKeyboardButton("Отмена ❌", callback_data="cancel_search")],
     ]
@@ -201,17 +212,31 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Создание разметки с кнопками
     keyboard = InlineKeyboardMarkup(buttons)
 
-    # Отправка сообщения с кнопками категорий поиска
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Выберите категорию для поиска:",
         reply_markup=keyboard,
     )
 
+    # Устанавливаем значение search_category в None,
+    # чтобы сбросить предыдущий выбор категории
+    search_category = None
+
 
 async def search_request(update: Update, context: CallbackContext):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="Введите поисковый запрос:")
+
+
+async def search_text_input(update: Update, context: CallbackContext):
+    global search_category
+
+    if search_category == "movies":
+        await search_movies(update, context)
+    elif search_category == "actors":
+        await search_actors(update, context)
+    elif search_category == "series":
+        await search_series(update, context)
 
 
 async def search_movies(update: Update, context: CallbackContext):

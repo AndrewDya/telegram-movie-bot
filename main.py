@@ -1,7 +1,7 @@
-from bot.handlers import start_command, help_command, popular_command, \
+from bot.handlers import (start_command, help_command, popular_command, \
     top_rated_command, upcoming_command, search_command, favorites_command, \
-    handle_button_press, actors_popular_command, series_popular_command, \
-    search_movies
+    handle_button_press, actors_popular_command, series_popular_command,
+                          search_text_input)
 from bot.utils import TOKEN
 from telegram.ext import ApplicationBuilder, CommandHandler, \
     CallbackQueryHandler, MessageHandler, filters
@@ -34,16 +34,10 @@ if __name__ == '__main__':
     app.add_handler(search_handler)
     app.add_handler(favorites_handler)
 
-    movies_search_handler = MessageHandler(filters.TEXT & ~filters.COMMAND,
-                                           search_movies)
-    # actors_search_handler = MessageHandler(filters.TEXT & ~filters.COMMAND,
-    #                                        search_actors)
-    # series_search_handler = MessageHandler(filters.TEXT & ~filters.COMMAND,
-    #                                        search_series)
+    search_handler = MessageHandler(filters.TEXT & ~filters.COMMAND,
+                                    search_text_input)
 
-    app.add_handler(movies_search_handler)
-    # app.add_handler(actors_search_handler)
-    # app.add_handler(series_search_handler)
+    app.add_handler(search_handler)
 
     app.run_polling()
     db.close()
