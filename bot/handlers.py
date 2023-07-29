@@ -27,12 +27,10 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
         await series_popular_command(update, context, selected_count=None)
     elif button_data == "search_command":
         await search_command(update, context)
-    elif button_data == "search_request":
+    elif button_data.startswith("search_request_"):
         await search_request(update, context)
-    # elif button_data == "search_actors":
-    #     await search_actors(update, context)
-    # elif button_data == "search_series":
-    #     await search_series(update, context)
+        category = button_data.split("_")[2]
+        #TODO реализовать конкретный обработчик текста
     elif button_data == "favorites_command":
         await favorites_command(update, context)
     elif button_data.startswith("top_"):
@@ -193,9 +191,9 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Создание кнопок категорий поиска
     buttons = [
         [
-            InlineKeyboardButton("Фильмы 🎬", callback_data="search_request"),
-            InlineKeyboardButton("Актёры 🌟", callback_data="search_actors"),
-            InlineKeyboardButton("Сериалы 📺", callback_data="search_series"),
+            InlineKeyboardButton("Фильмы 🎬", callback_data="search_request_movies"),
+            InlineKeyboardButton("Актёры 🌟", callback_data="search_request_actors"),
+            InlineKeyboardButton("Сериалы 📺", callback_data="search_request_series"),
         ],
         [InlineKeyboardButton("Отмена ❌", callback_data="cancel_search")],
     ]
@@ -222,20 +220,16 @@ async def search_movies(update: Update, context: CallbackContext):
     await get_movies_by_url(update, context, url, 5)
 
 
-# async def search_actors(update: Update, context: CallbackContext):
-#     await context.bot.send_message(chat_id=update.effective_chat.id,
-#                                    text="Введите название актёра:")
-#     user_query = update.message.text
-#     url = f"https://api.themoviedb.org/3/search/person?api_key={API_KEY}&query={user_query}&language={language}"
-#     await get_actors_by_url(update, context, url, 5)
-#
-#
-# async def search_series(update: Update, context: CallbackContext):
-#     await context.bot.send_message(chat_id=update.effective_chat.id,
-#                                    text="Введите название сериала:")
-#     user_query = update.message.text
-#     url = f"https://api.themoviedb.org/3/search/tv?api_key={API_KEY}&query={user_query}&language={language}"
-#     await get_series_by_url(update, context, url, 5)
+async def search_actors(update: Update, context: CallbackContext):
+    user_query = update.message.text
+    url = f"https://api.themoviedb.org/3/search/person?api_key={API_KEY}&query={user_query}&language={language}"
+    await get_actors_by_url(update, context, url, 5)
+
+
+async def search_series(update: Update, context: CallbackContext):
+    user_query = update.message.text
+    url = f"https://api.themoviedb.org/3/search/tv?api_key={API_KEY}&query={user_query}&language={language}"
+    await get_series_by_url(update, context, url, 5)
 
 
 async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
