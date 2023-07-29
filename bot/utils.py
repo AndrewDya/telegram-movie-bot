@@ -44,15 +44,20 @@ async def send_http_request(url):
 
 # Вспомогательная функция для загрузки фотографии и получения ее содержимого
 async def load_photo_content(url):
+    if url is None:
+        return None
+
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
         if response.status_code == 200:
             return response.content
-        return None
+    return None
 
 
 # Функция для форматирования даты
 async def format_date(date_str):
+    if date_str is None:
+        return "Не указана"  # Или верните другое значение, если требуется
     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
     months = [
         "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -103,7 +108,7 @@ async def get_status_description(status):
     return status_mapping.get(status, "Неизвестный статус")
 
 
-# Получаем абсолютный путь, указывая относительный путь, начиная с папки проекта
+# Получаем абсолютный путь, указывая отн-ный путь, начиная с папки проекта
 def get_db_path(file):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)

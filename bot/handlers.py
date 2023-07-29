@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ContextTypes, CallbackContext, MessageHandler, filters
+from telegram.ext import ContextTypes, CallbackContext
 from bot.actors_api import send_actors_info
 from bot.movie_api import send_movie_info, get_favorite_movie_details, \
     get_data_from_id, get_title_from_id
