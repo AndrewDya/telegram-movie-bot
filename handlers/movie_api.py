@@ -1,8 +1,9 @@
 import io
 import locale
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from bot.utils import API_KEY, language, send_http_request, load_photo_content, \
+from utils.utils import send_http_request, load_photo_content, \
     process_overview, format_date, get_cast_genres, get_status_description
+from config import API_KEY, language
 
 
 async def get_movie_details(movie_id):
@@ -23,9 +24,12 @@ async def get_movie_details(movie_id):
         cast = data.get("credits", {}).get("cast", [])[:3]
         crew = data.get("credits", {}).get("crew", [])
 
-        budget = locale.format_string("%d", budget, grouping=True) if budget else 'Неизвестен'
-        revenue = locale.format_string("%d", revenue, grouping=True) if revenue else 'Неизвестны'
-        poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+        budget = locale.format_string("%d", budget, grouping=True) \
+            if budget else 'Неизвестен'
+        revenue = locale.format_string("%d", revenue, grouping=True) \
+            if revenue else 'Неизвестны'
+        poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" \
+            if poster_path else None
         rating = "Ещё не выставлен" if rating == 0 else rating
 
         genre_names, actors, director = await get_cast_genres(genres, cast,crew)
@@ -66,7 +70,7 @@ async def find_trailer(movie_id):
             trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
             return trailer_url
 
-        # Если не найден официальный трейлер, берем первый попавшийся трейлер с размером 720 из результатов
+        # Если не найден официальный трейлер, берем трейлер с размером 720
         any_trailer = next((video for video in videos_results if
                             video.get("type") == "Trailer" and
                             video.get("size") == 720), None)
@@ -105,7 +109,8 @@ async def view_movie_info(movie):
         buttons.append([trailer_button])
 
     # Добавляем кнопку "Добавить в избранное"
-    add_to_favorites_button = InlineKeyboardButton("Добавить в избранное", callback_data=f"add_to_favorites_{movie_id}")
+    add_to_favorites_button = InlineKeyboardButton("Добавить в избранное",
+                                                   callback_data=f"add_to_favorites_{movie_id}")
     buttons.append([add_to_favorites_button])
 
     keyboard = InlineKeyboardMarkup(buttons) if buttons else None

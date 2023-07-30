@@ -1,12 +1,13 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes, CallbackContext
-from bot.actors_api import send_actors_info
-from bot.movie_api import send_movie_info, get_favorite_movie_details, \
-    get_data_from_id, get_title_from_id
-from bot.series_api import send_series_info
-from bot.utils import API_KEY, language, send_http_request
-from database.favorites import get_favorite_movies, add_to_favorites, \
-    remove_from_favorites
+from handlers.actors_api import send_actors_info
+from handlers.favorites_api import add_to_favorites, remove_from_favorites, \
+    get_favorite_movies
+from handlers.movie_api import get_title_from_id, get_data_from_id, \
+    send_movie_info, get_favorite_movie_details
+from handlers.series_api import send_series_info
+from config import API_KEY, language
+from utils.utils import send_http_request
 
 
 async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -111,8 +112,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response += "Популярные фильмы - Получить список популярных фильмов\n"
     response += "Топ рейтинга - Получить список фильмов с высоким рейтингом\n"
     response += "Ожидаемые - Получить список ожидаемых фильмов\n"
-    response += "Поиск фильма - После этой команды введите название фильма " \
-                "и бот предоставит результаты поиска\n"
+    response += "Поиск - После этой команды выберите категорию, введите" \
+                "запрос и бот предоставит результаты поиска\n"
     response += "Избранное - Просмотреть фильмы добавленные в избранное\n"
     response += "Популярные актёры - Получить список популярных актёров\n"
     response += "Популярные сериалы - Получить список популярных сериалов\n"

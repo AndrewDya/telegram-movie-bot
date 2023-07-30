@@ -1,7 +1,8 @@
 import io
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from bot.utils import send_http_request, API_KEY, load_photo_content, \
-    format_date, process_overview, language
+from utils.utils import send_http_request, load_photo_content, \
+    format_date, process_overview
+from config import API_KEY, language
 
 
 async def get_actor_details(actor_id):
@@ -15,7 +16,8 @@ async def get_actor_details(actor_id):
         biography = data.get("biography")
 
         formatted_birthday = await format_date(birthday)
-        photo_url = f"https://image.tmdb.org/t/p/w500{profile_path}" if profile_path else None
+        photo_url = f"https://image.tmdb.org/t/p/w500{profile_path}" \
+            if profile_path else None
         overview = await process_overview(biography)
 
         return actor_name, photo_url, formatted_birthday, overview
@@ -34,7 +36,8 @@ async def get_movies_list(actor_id):
     if data and data["results"]:
         actor_info = data["results"][0]
         known_for = actor_info.get("known_for", [])
-        movies = [{"id": movie.get("id"), "title": movie.get("title")} for movie in known_for]
+        movies = [{"id": movie.get("id"), "title": movie.get("title")}
+                  for movie in known_for]
 
         return movies
 
@@ -43,7 +46,8 @@ async def get_movies_list(actor_id):
 
 async def view_actor_info(actor):
     actor_id = actor.get("id")
-    actor_name, photo_url, formatted_birthday, overview = await get_actor_details(actor_id)
+    actor_name, photo_url, formatted_birthday, overview = \
+        await get_actor_details(actor_id)
     movies = await get_movies_list(actor_id)
 
     actor_info = f"{actor_name}\n"
@@ -57,7 +61,8 @@ async def view_actor_info(actor):
         for movie in first_two_movies:
             movie_id = movie["id"]
             movie_title = movie["title"]
-            button = InlineKeyboardButton(movie_title, callback_data=f"view_movie_{movie_id}")
+            button = InlineKeyboardButton(movie_title,
+                                          callback_data=f"view_movie_{movie_id}")
             buttons.append([button])
 
         keyboard = InlineKeyboardMarkup(buttons)

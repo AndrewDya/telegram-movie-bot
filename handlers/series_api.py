@@ -1,7 +1,7 @@
-from bot.utils import load_photo_content, language, process_overview, \
-    format_date, get_cast_genres, get_status_description
 import io
-from bot.utils import API_KEY, send_http_request
+from utils.utils import (load_photo_content, process_overview, \
+    format_date, get_cast_genres, get_status_description, send_http_request)
+from config import API_KEY, language
 
 
 async def get_series_details(series_id):
@@ -19,7 +19,8 @@ async def get_series_details(series_id):
         cast = data.get("credits", {}).get("cast", [])[:3]
         crew = data.get("credits", {}).get("crew", [])
 
-        poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+        poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" \
+            if poster_path else None
         rating = "Ещё не выставлен" if rating == 0 else rating
 
         genre_names, actors, director = await get_cast_genres(genres, cast, crew)
@@ -48,12 +49,6 @@ async def view_series_info(series):
     series_info += f"Режиссёр: {director}\n"
     series_info += f"Описание: {overview}\n"
     series_info += f"Актёры: {', '.join(actors)}\n"
-
-    # Добавляем кнопку "Добавить в избранное" (также, как в предыдущем коде)
-
-    # Формируем клавиатуру для сообщения, если есть кнопки
-
-    # Отправляем сообщение пользователю с информацией о сериале и клавиатурой (если есть)
 
     return poster_url, series_info
 

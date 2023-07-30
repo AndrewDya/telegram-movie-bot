@@ -1,36 +1,6 @@
 import os
-import locale
-import logging
 import httpx
 from datetime import datetime
-from dotenv import load_dotenv
-
-# Проверяем наличие файла .env и переменных окружения API_KEY, TOKEN
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-if os.path.exists(dotenv_path):
-    load_dotenv(dotenv_path)
-else:
-    print("Файл .env не найден. Убедитесь, что он существует и содержит необходимые переменные окружения.")
-    exit(1)
-
-API_KEY = os.getenv("API_KEY")
-if not API_KEY:
-    print("Переменная окружения API_KEY не определена. Убедитесь, что она присутствует в файле .env.")
-    exit(1)
-
-TOKEN = os.getenv("TOKEN")
-if not TOKEN:
-    print("Переменная окружения TOKEN не определена. Убедитесь, что она присутствует в файле .env.")
-    exit(1)
-
-language = 'ru-RU'
-
-# Устанавливаем настройки вывода даты и времени, а также логирование
-locale.setlocale(locale.LC_ALL, '')
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 
 
 # Вспомогательная функция для отправки HTTP-запроса
