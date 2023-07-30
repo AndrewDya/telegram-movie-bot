@@ -8,8 +8,8 @@ from config import API_KEY, language
 
 async def get_movie_details(movie_id):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}&append_to_response=credits"
-
     data = await send_http_request(url)
+
     if data:
         poster_path = data.get("poster_path")
         runtime = data.get("runtime")
@@ -50,7 +50,6 @@ async def find_trailer(movie_id):
     if videos_data and "results" in videos_data:
         videos_results = videos_data["results"]
 
-        # Ищем трейлер на русском языке
         russian_trailer = next((video for video in videos_results if
                                 video.get("type") == "Trailer" and
                                 video.get("iso_639_1") == "ru"), None)
@@ -60,7 +59,6 @@ async def find_trailer(movie_id):
             trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
             return trailer_url
 
-        # Если не найден русский трейлер, ищем официальный трейлер
         official_trailer = next((video for video in videos_results if
                                  video.get("type") == "Trailer" and
                                  video.get("official")), None)
@@ -70,7 +68,6 @@ async def find_trailer(movie_id):
             trailer_url = f"https://www.youtube.com/watch?v={trailer_key}"
             return trailer_url
 
-        # Если не найден официальный трейлер, берем трейлер с размером 720
         any_trailer = next((video for video in videos_results if
                             video.get("type") == "Trailer" and
                             video.get("size") == 720), None)
@@ -101,14 +98,13 @@ async def view_movie_info(movie):
     movie_info += f"Описание: {overview}\n"
     movie_info += f"Актёры: {', '.join(actors)}\n"
 
-    # Добавляем кнопку "Смотреть трейлер"
+    # Добавляем кнопки "Смотреть трейлер" и "Добавить в избранное"
     trailer_url = await find_trailer(movie_id)
     buttons = []
     if trailer_url:
         trailer_button = InlineKeyboardButton("Смотреть трейлер", url=trailer_url)
         buttons.append([trailer_button])
 
-    # Добавляем кнопку "Добавить в избранное"
     add_to_favorites_button = InlineKeyboardButton("Добавить в избранное",
                                                    callback_data=f"add_to_favorites_{movie_id}")
     buttons.append([add_to_favorites_button])
@@ -144,7 +140,7 @@ async def get_favorite_movie_details(update, context, movie_id):
         movie_info = f"{title}. Рейтинг: {rating}. Продолжительность: {runtime} минут"
         movie_data = [data]
 
-        # Добавляем кнопки "Удалить из избранного" и "Полная информация"
+        # Добавляем кнопки "Удалить из избранного" и "Просмотр"
         buttons_row1 = [
             InlineKeyboardButton("Просмотр",
                                  callback_data=f"view_movie_{movie_id}"),

@@ -23,7 +23,6 @@ if not TOKEN:
 
 language = 'ru-RU'
 
-# Устанавливаем настройки вывода даты и времени, а также логирование
 locale.setlocale(locale.LC_ALL, '')
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',

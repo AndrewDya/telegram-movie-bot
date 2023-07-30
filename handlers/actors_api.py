@@ -7,8 +7,8 @@ from config import API_KEY, language
 
 async def get_actor_details(actor_id):
     url = f"https://api.themoviedb.org/3/person/{actor_id}?api_key={API_KEY}"
-
     data = await send_http_request(url)
+
     if data:
         actor_name = data.get("name")
         profile_path = data.get("profile_path")
@@ -37,8 +37,7 @@ async def get_movies_list(actor_id):
         actor_info = data["results"][0]
         known_for = actor_info.get("known_for", [])
         movies = [{"id": movie.get("id"), "title": movie.get("title")}
-                  for movie in known_for]
-
+                  for movie in known_for if movie.get("title")]
         return movies
 
     return None
@@ -67,7 +66,6 @@ async def view_actor_info(actor):
 
         keyboard = InlineKeyboardMarkup(buttons)
 
-        # Возвращаем всю необходимую информацию и клавиатуру
         return photo_url, actor_info, keyboard
 
 

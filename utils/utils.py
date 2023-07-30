@@ -1,9 +1,8 @@
-import os
 import httpx
 from datetime import datetime
 
 
-# Вспомогательная функция для отправки HTTP-запроса
+# Функции для отправки HTTP-запроса, загрузки фото и редактирования описания
 async def send_http_request(url):
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -12,7 +11,6 @@ async def send_http_request(url):
         return None
 
 
-# Вспомогательная функция для загрузки фотографии и получения ее содержимого
 async def load_photo_content(url):
     if url is None:
         return None
@@ -24,10 +22,9 @@ async def load_photo_content(url):
     return None
 
 
-# Функция для форматирования даты
 async def format_date(date_str):
     if date_str is None:
-        return "Не указана"  # Или верните другое значение, если требуется
+        return "Не указана"
     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
     months = [
         "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -40,7 +37,6 @@ async def format_date(date_str):
     return formatted_date
 
 
-# Функция для обработки описания
 async def process_overview(overview):
     if overview:
         max_length = 350
@@ -48,7 +44,6 @@ async def process_overview(overview):
     return 'Нет описания'
 
 
-# Функция для обработки жанров, работников
 async def get_cast_genres(genres, cast, crew):
     genre_names = [genre["name"] for genre in genres if
                    genre.get("id") in {g["id"] for g in genres}]
@@ -63,10 +58,9 @@ async def get_cast_genres(genres, cast, crew):
     return genre_names, actors, director
 
 
-# Функция для обработки статуса
 async def get_status_description(status):
     status_mapping = {
-        "Post Production": "Постпродакшн",
+        "Post Production": "Пост продакшн",
         "In Production": "В производстве",
         "Returning Series": "Онлайн",
         "Planned": "Запланирован",
@@ -76,12 +70,3 @@ async def get_status_description(status):
         "Released": "Выпущен",
     }
     return status_mapping.get(status, "Неизвестный статус")
-
-
-# Получаем абсолютный путь, указывая отн-ный путь, начиная с папки проекта
-def get_db_path(file):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)
-    db_path = os.path.join(parent_dir, file)
-
-    return db_path

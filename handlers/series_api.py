@@ -35,12 +35,10 @@ async def get_series_details(series_id):
 
 
 async def view_series_info(series):
-    # Извлекаем информацию о сериале из переданного словаря
     series_id = series.get("id")
     poster_url, genre_names, actors, title, rating, overview, director, \
         formatted_date, new_status = await get_series_details(series_id)
 
-    # Формируем текстовое сообщение с информацией о сериале
     series_info = f"{title}\n"
     series_info += f"Рейтинг: {rating}\n"
     series_info += f"Жанр: {', '.join(genre_names)}\n"

@@ -1,10 +1,10 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, \
     CallbackQueryHandler, MessageHandler, filters
 from handlers.favorites_api import db, FavoriteMovie
-from handlers.default_handlers import (handle_button_press, favorites_command,
-    actors_popular_command, series_popular_command, search_command, \
-    upcoming_command, top_rated_command, popular_command, help_command, \
-    start_command, search_text_input)
+from handlers.default_handlers import favorites_command, upcoming_command, \
+    handle_button_press, actors_popular_command, series_popular_command, \
+    search_command, top_rated_command, popular_command, help_command, \
+    start_command, search_text_input
 from config import TOKEN
 
 

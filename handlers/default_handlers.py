@@ -1,10 +1,10 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes, CallbackContext
 from handlers.actors_api import send_actors_info
-from handlers.favorites_api import add_to_favorites, remove_from_favorites, \
-    get_favorite_movies
-from handlers.movie_api import get_title_from_id, get_data_from_id, \
-    send_movie_info, get_favorite_movie_details
+from handlers.favorites_api import get_favorite_movies, add_to_favorites, \
+    remove_from_favorites
+from handlers.movie_api import send_movie_info, get_favorite_movie_details, \
+    get_title_from_id, get_data_from_id
 from handlers.series_api import send_series_info
 from config import API_KEY, language
 from utils.utils import send_http_request
@@ -77,7 +77,6 @@ async def handle_button_press(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Создание кнопок команд с визуальными стилями
     buttons_row1 = [
         InlineKeyboardButton("Помощь 🤔", callback_data="help_command"),
         InlineKeyboardButton("Популярные фильмы 🎬", callback_data="popular_command"),
@@ -96,11 +95,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         InlineKeyboardButton("Популярные сериалы 📺", callback_data="series_popular_command"),
     ]
 
-    # Создание разметки с кнопками
     keyboard = InlineKeyboardMarkup([buttons_row1, buttons_row2, buttons_row3,
                                      buttons_row4])
 
-    # Отправка сообщения с кнопками
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="Выберите команду:",
                                    reply_markup=keyboard)
@@ -118,10 +115,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response += "Популярные актёры - Получить список популярных актёров\n"
     response += "Популярные сериалы - Получить список популярных сериалов\n"
 
-    # Отправка сообщения с текстом команд и кнопками
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
-
-    # Вызов функции start_command для отображения кнопок
     await start_command(update, context)
 
 
@@ -137,17 +131,14 @@ async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAU
     # Варианты числа фильмов для вывода в кнопках
     movie_counts = [1, 3, 5, 10]
 
-    # Создание кнопок с вариантами числа фильмов
     buttons = [
         InlineKeyboardButton(str(count), callback_data=f"{category}_{count}")
         for count in movie_counts
     ]
-    keyboard = InlineKeyboardMarkup([buttons])
 
-    # Определение названия категории
+    keyboard = InlineKeyboardMarkup([buttons])
     category_name = category_names.get(category, category)
 
-    # Отправка сообщения с вопросом о выборе числа фильмов
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"Выберите количество {category_name}, которое хотите увидеть:",
@@ -197,7 +188,6 @@ async def series_popular_command(update: Update, context: ContextTypes.DEFAULT_T
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global search_category
-    # Создание кнопок категорий поиска
     buttons = [
         [
             InlineKeyboardButton("Фильмы 🎬",
@@ -210,7 +200,6 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("Отмена ❌", callback_data="cancel_search")],
     ]
 
-    # Создание разметки с кнопками
     keyboard = InlineKeyboardMarkup(buttons)
 
     await context.bot.send_message(
@@ -219,8 +208,6 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard,
     )
 
-    # Устанавливаем значение search_category в None,
-    # чтобы сбросить предыдущий выбор категории
     search_category = None
 
 
@@ -263,11 +250,12 @@ async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     favorite_movie_ids = get_favorite_movies(user_id)
 
     if not favorite_movie_ids:
-        # Если список избранного пуст, уведомляем пользователя
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Список избранных фильмов пуст.")
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text="Список избранных фильмов пуст.")
         return
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Список избранных фильмов {len(favorite_movie_ids)}:")
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text=f"Список избранных фильмов {len(favorite_movie_ids)}:")
 
     for movie_id in favorite_movie_ids:
         await get_favorite_movie_details(update, context, movie_id)
@@ -280,7 +268,8 @@ async def get_movies_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         await send_movie_info(update, context, movies)
     else:
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=f"Ошибка при получении данных о фильмах")
+            chat_id=update.effective_chat.id,
+            text=f"Ошибка при получении данных о фильмах")
     await start_command(update, context)
 
 
@@ -291,7 +280,8 @@ async def get_actors_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         await send_actors_info(update, context, actors)
     else:
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Ошибка при получении данных об актёрах"
+            chat_id=update.effective_chat.id,
+            text="Ошибка при получении данных об актёрах"
         )
     await start_command(update, context)
 
@@ -303,6 +293,7 @@ async def get_series_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         await send_series_info(update, context, series_list)
     else:
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Ошибка при получении данных о сериалах"
+            chat_id=update.effective_chat.id,
+            text="Ошибка при получении данных о сериалах"
         )
     await start_command(update, context)
