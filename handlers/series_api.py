@@ -1,6 +1,6 @@
 import io
-from utils.utils import (load_photo_content, process_overview, \
-    format_date, get_cast_genres, get_status_description, send_http_request)
+from utils.utils import load_photo_content, process_overview, \
+    format_date, get_cast_genres, get_status_description, send_http_request
 from config import API_KEY, language
 
 
