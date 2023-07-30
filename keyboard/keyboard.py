@@ -17,6 +17,10 @@ async def handle_button_press(update, context):
 
     if button_data == "help_command":
         await help_command(update, context)
+    elif button_data == "search_command":
+        await search_command(update, context)
+    elif button_data == "favorites_command":
+        await favorites_command(update, context)
     elif button_data == "popular_command":
         await popular_command(update, context, selected_count=None)
     elif button_data == "top_rated_command":
@@ -27,21 +31,6 @@ async def handle_button_press(update, context):
         await actors_popular_command(update, context, selected_count=None)
     elif button_data == "series_popular_command":
         await series_popular_command(update, context, selected_count=None)
-    elif button_data == "search_command":
-        await search_command(update, context)
-    elif button_data.startswith("search_request_"):
-        await search_request(update, context)
-        search_category = button_data.split("_")[2]
-        print(search_category)
-    elif button_data == "cancel_search":
-        search_category = None
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="Поиск отменен.",
-        )
-        await start_command(update, context)
-    elif button_data == "favorites_command":
-        await favorites_command(update, context)
     elif button_data.startswith("top_"):
         selected_count = int(button_data.split("_")[1])
         await top_rated_command(update, context, selected_count)
@@ -57,6 +46,16 @@ async def handle_button_press(update, context):
     elif button_data.startswith("series_popular_"):
         selected_count = int(button_data.split("_")[2])
         await series_popular_command(update, context, selected_count)
+    elif button_data.startswith("search_request_"):
+        await search_request(update, context)
+        search_category = button_data.split("_")[2]
+    elif button_data == "cancel_search":
+        search_category = None
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Поиск отменен.",
+        )
+        await start_command(update, context)
     elif button_data.startswith("add_to_favorites_"):
         movie_id = int(button_data.split("_")[3])
         add_to_favorites(update.effective_user.id, movie_id)
