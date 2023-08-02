@@ -10,6 +10,12 @@ from keyboard.keyboard import handle_button_press, search_text_input, \
 
 
 def run_bot():
+	"""
+	Start the Telegram bot for user interaction.
+
+	Create and configure command and event handlers, connect to the database,
+	and start the bot to listen for new messages.
+	"""
 	app = ApplicationBuilder().token(TOKEN).build()
 	start_handler = CommandHandler('start', start_command)
 	help_handler = CommandHandler('help', help_command)

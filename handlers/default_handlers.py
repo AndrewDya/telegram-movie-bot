@@ -1,5 +1,6 @@
+from typing import Optional
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ContextTypes
+from telegram.ext import CallbackContext
 from database.database import get_favorite_movies
 from handlers.actors_api import send_actors_info
 from handlers.movie_api import send_movie_info, get_favorite_movie_details
@@ -8,7 +9,13 @@ from config import API_KEY, language
 from utils.utils import send_http_request
 
 
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_command(update: Update, context: CallbackContext):
+    """
+    Handles the /start command by sending a menu of available options to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     buttons_row1 = [
         InlineKeyboardButton("Помощь 🤔", callback_data="help_command"),
         InlineKeyboardButton("Популярные фильмы 🎬", callback_data="popular_command"),
@@ -35,7 +42,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    reply_markup=keyboard)
 
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def help_command(update: Update, context: CallbackContext):
+    """
+    Provides a list of available commands to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     response = "Доступные команды:\n"
     response += "Помощь - Информация по командам бота\n"
     response += "Популярные фильмы - Получить список популярных фильмов\n"
@@ -51,7 +64,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await start_command(update, context)
 
 
-async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, category: str):
+async def create_movie_count_buttons(update: Update, context: CallbackContext, category: str):
+    """
+    Creates inline keyboard buttons for selecting the number of movies to display.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param category: The category of movies (e.g., "top", "popular").
+    """
     category_names = {
         "top": "топ рейтинга фильмов",
         "popular": "популярных фильмов",
@@ -77,7 +97,14 @@ async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAU
     )
 
 
-async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+async def top_rated_command(update: Update, context: CallbackContext, selected_count: Optional[int] = None):
+    """
+    Handles the /top_rated command by displaying a list of top-rated movies.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param selected_count: Optional. The selected number of movies to display.
+    """
     if selected_count is None:
         await create_movie_count_buttons(update, context, "top")
     else:
@@ -85,7 +112,14 @@ async def top_rated_command(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         await get_movies_by_url(update, context, url, selected_count)
 
 
-async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+async def popular_command(update: Update, context: CallbackContext, selected_count: Optional[int] = None):
+    """
+    Handles the /popular command by displaying a list of popular movies.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param selected_count: Optional. The selected number of movies to display.
+    """
     if selected_count is None:
         await create_movie_count_buttons(update, context, "popular")
     else:
@@ -93,7 +127,14 @@ async def popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, se
         await get_movies_by_url(update, context, url, selected_count)
 
 
-async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+async def upcoming_command(update: Update, context: CallbackContext, selected_count: Optional[int] = None):
+    """
+    Handles the /upcoming command by displaying a list of upcoming movies.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param selected_count: Optional. The selected number of movies to display.
+    """
     if selected_count is None:
         await create_movie_count_buttons(update, context, "upcoming")
     else:
@@ -101,7 +142,14 @@ async def upcoming_command(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         await get_movies_by_url(update, context, url, selected_count)
 
 
-async def actors_popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+async def actors_popular_command(update: Update, context: CallbackContext, selected_count: Optional[int] = None):
+    """
+    Handles the /actors_popular command by displaying a list of popular actors.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param selected_count: Optional. The selected number of actors to display.
+    """
     if selected_count is None:
         await create_movie_count_buttons(update, context, "actors_popular")
     else:
@@ -109,7 +157,14 @@ async def actors_popular_command(update: Update, context: ContextTypes.DEFAULT_T
         await get_actors_by_url(update, context, url, selected_count)
 
 
-async def series_popular_command(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_count=None):
+async def series_popular_command(update: Update, context: CallbackContext, selected_count: Optional[int] = None):
+    """
+    Handles the /series_popular command by displaying a list of popular TV series.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param selected_count: Optional. The selected number of TV series to display.
+    """
     if selected_count is None:
         await create_movie_count_buttons(update, context, "series_popular")
     else:
@@ -117,7 +172,13 @@ async def series_popular_command(update: Update, context: ContextTypes.DEFAULT_T
         await get_series_by_url(update, context, url, selected_count)
 
 
-async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def favorites_command(update: Update, context: CallbackContext):
+    """
+    Handles the /favorites command by displaying the list of favorite movies for the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     user_id = update.effective_user.id
     favorite_movie_ids = get_favorite_movies(user_id)
 
@@ -133,7 +194,15 @@ async def favorites_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await get_favorite_movie_details(update, context, movie_id)
 
 
-async def get_movies_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str, selected_count: int,):
+async def get_movies_by_url(update: Update, context: CallbackContext, url: str, selected_count: int):
+    """
+    Fetches movie data from the specified URL and sends information to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param url: The URL for fetching movie data.
+    :param selected_count: The number of movies to display.
+    """
     data = await send_http_request(url)
     if data and "results" in data:
         movies = data["results"][:selected_count]
@@ -145,7 +214,15 @@ async def get_movies_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     await start_command(update, context)
 
 
-async def get_actors_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str, selected_count: int):
+async def get_actors_by_url(update: Update, context: CallbackContext, url: str, selected_count: int):
+    """
+    Fetches actor data from the specified URL and sends information to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param url: The URL for fetching actor data.
+    :param selected_count: The number of actors to display.
+    """
     data = await send_http_request(url)
     if data and "results" in data:
         actors = data["results"][:selected_count]
@@ -158,7 +235,15 @@ async def get_actors_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     await start_command(update, context)
 
 
-async def get_series_by_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str, selected_count: int):
+async def get_series_by_url(update: Update, context: CallbackContext, url: str, selected_count: int):
+    """
+    Fetches TV series data from the specified URL and sends information to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param url: The URL for fetching TV series data.
+    :param selected_count: The number of TV series to display.
+    """
     data = await send_http_request(url)
     if data and "results" in data:
         series_list = data["results"][:selected_count]
