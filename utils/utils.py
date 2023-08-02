@@ -2,8 +2,13 @@ import httpx
 from datetime import datetime
 
 
-# Функции для отправки HTTP-запроса, загрузки фото и редактирования описания
-async def send_http_request(url):
+async def send_http_request(url: str) -> dict or None:
+    """
+    Sends an asynchronous HTTP GET request and returns the JSON response.
+
+    :param url: The URL to send the request to.
+    :return: The JSON response content as a dictionary, or None if the request fails.
+    """
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
         if response.status_code == 200:
@@ -11,7 +16,13 @@ async def send_http_request(url):
         return None
 
 
-async def load_photo_content(url):
+async def load_photo_content(url: str) -> bytes or None:
+    """
+    Loads the content of a photo from the given URL.
+
+    :param url: The URL of the photo.
+    :return: The bytes content of the photo, or None if the request fails or the URL is None.
+    """
     if url is None:
         return None
 
@@ -22,7 +33,14 @@ async def load_photo_content(url):
     return None
 
 
-async def format_date(date_str):
+async def format_date(date_str: str) -> str:
+    """
+    Formats a date string in the format 'YYYY-MM-DD' to a human-readable format.
+
+    :param date_str: The date string in 'YYYY-MM-DD' format.
+    :return: The formatted date string like 'Day Month Yearг.',
+    or "Не указана" if date_str is None.
+    """
     if date_str is None:
         return "Не указана"
     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
@@ -37,14 +55,29 @@ async def format_date(date_str):
     return formatted_date
 
 
-async def process_overview(overview):
+async def process_overview(overview: str) -> str:
+    """
+    Processes an overview text, truncating it if it exceeds a maximum length.
+
+    :param overview: The overview text.
+    :return: The processed overview text, truncated if necessary,
+    or 'Нет описания' if overview is None.
+    """
     if overview:
         max_length = 350
         return overview[:max_length] + (overview[max_length:] and '...')
     return 'Нет описания'
 
 
-async def get_cast_genres(genres, cast, crew):
+async def get_cast_genres(genres: list, cast: list, crew: list) -> tuple:
+    """
+    Extracts and formats information about genres, actors, and director.
+
+    :param genres: List of genre dictionaries.
+    :param cast: List of cast member dictionaries.
+    :param crew: List of crew member dictionaries.
+    :return: A tuple containing formatted genre names, actors list, and director's name.
+    """
     genre_names = [genre["name"] for genre in genres if
                    genre.get("id") in {g["id"] for g in genres}]
     actors = [f"{actor['name']} ({actor['character']})" for actor in cast]
@@ -58,7 +91,13 @@ async def get_cast_genres(genres, cast, crew):
     return genre_names, actors, director
 
 
-async def get_status_description(status):
+async def get_status_description(status: str) -> str:
+    """
+    Gets a human-readable description of a movie or series status.
+
+    :param status: The status string.
+    :return: The corresponding human-readable status description, or 'Неизвестный статус' if not found.
+    """
     status_mapping = {
         "Post Production": "Пост продакшн",
         "In Production": "В производстве",

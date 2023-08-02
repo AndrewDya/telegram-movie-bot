@@ -1,12 +1,22 @@
 import io
 import locale
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from typing import List, Dict, Tuple, Optional
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackContext
 from utils.utils import send_http_request, load_photo_content, \
     process_overview, format_date, get_cast_genres, get_status_description
 from config import API_KEY, language
 
 
-async def get_movie_details(movie_id):
+async def get_movie_details(movie_id: int) -> Optional[Tuple]:
+    """
+    Fetches details about a movie using its ID from TheMovieDB API.
+
+    :param movie_id: The ID of the movie.
+    :return: A tuple containing runtime, poster URL, genre names, actor names, budget, title,
+             rating, overview, director, revenue, formatted date, and new status.
+             Returns None if data is not available.
+    """
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}&append_to_response=credits"
     data = await send_http_request(url)
 
@@ -43,7 +53,13 @@ async def get_movie_details(movie_id):
     return None
 
 
-async def find_trailer(movie_id):
+async def find_trailer(movie_id: int) -> Optional[str]:
+    """
+    Finds a trailer URL for a movie using its ID from TheMovieDB API.
+
+    :param movie_id: The ID of the movie.
+    :return: The URL of the trailer, or None if no trailer is found.
+    """
     videos_url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key={API_KEY}"
     videos_data = await send_http_request(videos_url)
 
@@ -80,7 +96,13 @@ async def find_trailer(movie_id):
     return None
 
 
-async def view_movie_info(movie):
+async def view_movie_info(movie: Dict) -> Tuple[str, str, Optional[InlineKeyboardMarkup]]:
+    """
+    Generates a formatted movie information string and an inline keyboard.
+
+    :param movie: Dictionary containing movie information.
+    :return: A tuple containing poster URL, movie information string, and an inline keyboard.
+    """
     movie_id = movie.get("id")
     runtime, poster_url, genre_names, actors, budget, title, rating, \
         overview, director, revenue, formatted_date, new_status\
@@ -98,7 +120,6 @@ async def view_movie_info(movie):
     movie_info += f"Описание: {overview}\n"
     movie_info += f"Актёры: {', '.join(actors)}\n"
 
-    # Добавляем кнопки "Смотреть трейлер" и "Добавить в избранное"
     trailer_url = await find_trailer(movie_id)
     buttons = []
     if trailer_url:
@@ -114,7 +135,14 @@ async def view_movie_info(movie):
     return poster_url, movie_info, keyboard
 
 
-async def send_movie_info(update, context, movies):
+async def send_movie_info(update: Update, context: CallbackContext, movies: List[Dict]):
+    """
+    Sends formatted movie information along with poster images and an inline keyboard to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param movies: List of dictionaries containing movie information.
+    """
     for movie in movies:
         poster_url, movie_info, keyboard = await view_movie_info(movie)
         file_content = await load_photo_content(poster_url)
@@ -129,7 +157,15 @@ async def send_movie_info(update, context, movies):
                 text="Ошибка при загрузке фотографии")
 
 
-async def get_favorite_movie_details(update, context, movie_id):
+async def get_favorite_movie_details(update: Update, context: CallbackContext, movie_id: int) -> List[Dict]:
+    """
+    Fetches details about a favorite movie using its ID from TheMovieDB API.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param movie_id: The ID of the favorite movie.
+    :return: A list containing dictionary with movie data.
+    """
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
 
     data = await send_http_request(url)
@@ -140,7 +176,6 @@ async def get_favorite_movie_details(update, context, movie_id):
         movie_info = f"{title}. Рейтинг: {rating}. Продолжительность: {runtime} минут"
         movie_data = [data]
 
-        # Добавляем кнопки "Удалить из избранного" и "Просмотр"
         buttons_row1 = [
             InlineKeyboardButton("Просмотр",
                                  callback_data=f"view_movie_{movie_id}"),
@@ -158,14 +193,26 @@ async def get_favorite_movie_details(update, context, movie_id):
         return movie_data
 
 
-async def get_data_from_id(movie_id):
+async def get_data_from_id(movie_id: int) -> List[Dict]:
+    """
+    Fetches movie data using its ID from TheMovieDB API.
+
+    :param movie_id: The ID of the movie.
+    :return: A list containing dictionary with movie data.
+    """
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
     movie_data = await send_http_request(url)
     if movie_data:
         return [movie_data]
 
 
-async def get_title_from_id(movie_id):
+async def get_title_from_id(movie_id: int) -> Optional[str]:
+    """
+    Fetches movie title using its ID from TheMovieDB API.
+
+    :param movie_id: The ID of the movie.
+    :return: The title of the movie, or None if data is not available.
+    """
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&language={language}"
     data = await send_http_request(url)
     if data:

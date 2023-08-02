@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
+from database.database import get_favorite_movies
 from handlers.actors_api import send_actors_info
-from handlers.favorites_api import get_favorite_movies
 from handlers.movie_api import send_movie_info, get_favorite_movie_details
 from handlers.series_api import send_series_info
 from config import API_KEY, language
@@ -60,7 +60,6 @@ async def create_movie_count_buttons(update: Update, context: ContextTypes.DEFAU
         "series_popular": "популярных сериалов",
     }
 
-    # Варианты числа фильмов для вывода в кнопках
     movie_counts = [1, 3, 5, 10]
 
     buttons = [

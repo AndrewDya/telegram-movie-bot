@@ -1,11 +1,20 @@
 import io
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from typing import Optional, List, Dict, Tuple
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackContext
 from utils.utils import send_http_request, load_photo_content, \
     format_date, process_overview
 from config import API_KEY, language
 
 
-async def get_actor_details(actor_id):
+async def get_actor_details(actor_id: int) -> Optional[Tuple[str, str, str, str]]:
+    """
+    Fetches details about an actor using their ID from TheMovieDB API.
+
+    :param actor_id: The ID of the actor.
+    :return: A tuple containing actor name, photo URL, formatted birthday, and overview.
+             Returns None if data is not available.
+    """
     url = f"https://api.themoviedb.org/3/person/{actor_id}?api_key={API_KEY}"
     data = await send_http_request(url)
 
@@ -25,7 +34,14 @@ async def get_actor_details(actor_id):
     return None
 
 
-async def get_movies_list(actor_id):
+async def get_movies_list(actor_id: int) -> Optional[List[Dict[str, str]]]:
+    """
+    Retrieves a list of movies associated with an actor's ID.
+
+    :param actor_id: The ID of the actor.
+    :return: A list of dictionaries containing movie IDs and titles.
+             Returns None if no data is available.
+    """
     actor_name = await get_name_from_id(actor_id)
     if not actor_name:
         return None
@@ -43,7 +59,14 @@ async def get_movies_list(actor_id):
     return None
 
 
-async def view_actor_info(actor):
+async def view_actor_info(actor: Dict) -> Optional[Tuple[str, str, InlineKeyboardMarkup]]:
+    """
+    Generates a formatted actor information string and an inline keyboard for associated movies.
+
+    :param actor: Dictionary containing actor information.
+    :return: A tuple containing photo URL, actor information string, and an inline keyboard.
+             Returns None if data is not available.
+    """
     actor_id = actor.get("id")
     actor_name, photo_url, formatted_birthday, overview = \
         await get_actor_details(actor_id)
@@ -69,7 +92,14 @@ async def view_actor_info(actor):
         return photo_url, actor_info, keyboard
 
 
-async def send_actors_info(update, context, actors):
+async def send_actors_info(update: Update, context: CallbackContext, actors: List[Dict]):
+    """
+    Sends formatted actor information along with photos and an inline keyboard to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param actors: List of dictionaries containing actor information.
+    """
     for actor in actors:
         photo_url, actor_info, keyboard = await view_actor_info(actor)
         file_content = await load_photo_content(photo_url)
@@ -85,7 +115,13 @@ async def send_actors_info(update, context, actors):
             )
 
 
-async def get_name_from_id(actor_id):
+async def get_name_from_id(actor_id: int) -> Optional[str]:
+    """
+    Retrieves the name of an actor using their ID from TheMovieDB API.
+
+    :param actor_id: The ID of the actor.
+    :return: The name of the actor, or None if data is not available.
+    """
     url = f"https://api.themoviedb.org/3/person/{actor_id}?api_key={API_KEY}"
     data = await send_http_request(url)
     if data:

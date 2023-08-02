@@ -11,7 +11,6 @@ class FavoriteMovie(Model):
         database = db
 
 
-# Функции для добавления, удаления и получения избранных фильмов
 def add_to_favorites(user_id, movie_id):
     try:
         FavoriteMovie.create(user_id=user_id, movie_id=movie_id)

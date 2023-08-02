@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 import logging
 
-# Проверяем наличие файла .env и загружаем переменные окружения
 dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)

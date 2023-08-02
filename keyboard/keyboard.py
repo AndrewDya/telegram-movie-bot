@@ -1,16 +1,22 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ContextTypes
 from config import API_KEY, language
+from database.database import remove_from_favorites, add_to_favorites
 from handlers.default_handlers import help_command, popular_command, \
     top_rated_command, upcoming_command, actors_popular_command, \
     series_popular_command, start_command, get_actors_by_url, get_series_by_url, \
     favorites_command, get_movies_by_url
-from handlers.favorites_api import add_to_favorites, remove_from_favorites
 from handlers.movie_api import get_title_from_id, get_data_from_id, \
     send_movie_info
 
 
 async def handle_button_press(update, context):
+    """
+    Handles button press callback queries.
+
+    :param update: The received update object.
+    :param context: The callback context.
+    """
     query = update.callback_query
     button_data = query.data
     global search_category
@@ -77,6 +83,12 @@ async def handle_button_press(update, context):
 
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles the 'search' command by presenting search options to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     global search_category
     buttons = [
         [
@@ -102,11 +114,23 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def search_request(update: Update, context: CallbackContext):
+    """
+    Handles the 'search_request' callback query by prompting the user to input a search query.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="Введите поисковый запрос:")
 
 
 async def search_text_input(update: Update, context: CallbackContext):
+    """
+    Handles the user's search query input and delegates the search based on the selected category.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     global search_category
 
     if search_category == "movies":
@@ -118,18 +142,36 @@ async def search_text_input(update: Update, context: CallbackContext):
 
 
 async def search_movies(update: Update, context: CallbackContext):
+    """
+    Searches for movies based on the user's query and sends the results to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     user_query = update.message.text
     url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={user_query}&language={language}"
     await get_movies_by_url(update, context, url, 5)
 
 
 async def search_actors(update: Update, context: CallbackContext):
+    """
+    Searches for actors based on the user's query and sends the results to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     user_query = update.message.text
     url = f"https://api.themoviedb.org/3/search/person?api_key={API_KEY}&query={user_query}&language={language}"
     await get_actors_by_url(update, context, url, 5)
 
 
 async def search_series(update: Update, context: CallbackContext):
+    """
+    Searches for TV series based on the user's query and sends the results to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    """
     user_query = update.message.text
     url = f"https://api.themoviedb.org/3/search/tv?api_key={API_KEY}&query={user_query}&language={language}"
     await get_series_by_url(update, context, url, 5)

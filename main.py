@@ -1,6 +1,6 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, filters, \
 	CallbackQueryHandler, MessageHandler
-from handlers.favorites_api import db, FavoriteMovie
+from database.database import FavoriteMovie, db
 from handlers.default_handlers import favorites_command, upcoming_command, \
 	actors_popular_command, series_popular_command, top_rated_command, \
 	popular_command, help_command, start_command

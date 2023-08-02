@@ -1,10 +1,20 @@
 import io
+from typing import List, Dict, Tuple, Optional
+from telegram import Update
+from telegram.ext import CallbackContext
 from utils.utils import load_photo_content, process_overview, \
     format_date, get_cast_genres, get_status_description, send_http_request
 from config import API_KEY, language
 
 
-async def get_series_details(series_id):
+async def get_series_details(series_id: int) -> Optional[Tuple]:
+    """
+    Fetches details about a TV series using its ID from TheMovieDB API.
+
+    :param series_id: The ID of the TV series.
+    :return: A tuple containing poster URL, genre names, actor names, title, rating, overview, director,
+             formatted date, and new status. Returns None if data is not available.
+    """
     url = f"https://api.themoviedb.org/3/tv/{series_id}?api_key={API_KEY}&language={language}&append_to_response=credits"
 
     data = await send_http_request(url)
@@ -34,7 +44,13 @@ async def get_series_details(series_id):
     return None
 
 
-async def view_series_info(series):
+async def view_series_info(series: Dict) -> Tuple:
+    """
+    Generates a formatted series information string.
+
+    :param series: Dictionary containing series information.
+    :return: A tuple containing poster URL and series information string.
+    """
     series_id = series.get("id")
     poster_url, genre_names, actors, title, rating, overview, director, \
         formatted_date, new_status = await get_series_details(series_id)
@@ -51,7 +67,14 @@ async def view_series_info(series):
     return poster_url, series_info
 
 
-async def send_series_info(update, context, series_list):
+async def send_series_info(update: Update, context: CallbackContext, series_list: List[Dict]):
+    """
+    Sends formatted series information along with poster images to the user.
+
+    :param update: The received update object.
+    :param context: The context for the callback.
+    :param series_list: List of dictionaries containing series information.
+    """
     for series in series_list:
         poster_url, series_info = await view_series_info(series)
         file_content = await load_photo_content(poster_url)
