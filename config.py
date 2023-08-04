@@ -23,7 +23,13 @@ if not TOKEN:
 language = 'ru-RU'
 
 locale.setlocale(locale.LC_ALL, '')
+
+log_dir = 'logs'
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
 logging.basicConfig(
+    filename=os.path.join(log_dir, 'info.log'),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
