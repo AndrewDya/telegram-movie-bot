@@ -90,6 +90,11 @@ python main.py
 [MIT License](https://opensource.org/licenses/MIT)
 
 
+## Screenshots
+
+![Screenshot](/images/Screen_1.jpg)
+![Screenshot](/images/Screen_2.jpg)
+
 ## Контакты
 
 Если у вас есть вопросы или предложения по улучшению MovieBot, свяжитесь со мной:
