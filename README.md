@@ -90,7 +90,7 @@ python main.py
 [MIT License](https://opensource.org/licenses/MIT)
 
 
-## Screenshots
+## Скриншоты
 
 ![Screenshot](/images/Screen_1.jpg)
 ![Screenshot](/images/Screen_2.jpg)
