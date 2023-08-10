@@ -101,3 +101,5 @@ python main.py
 
 - Email: AndrewDya@gmail.com
 - Telegram: [AndrewDya](https://t.me/AndrewDya)
+- Ссылка на бота: [Film Enthusiast Bot](https://t.me/film_enthusiast_bot)
+
